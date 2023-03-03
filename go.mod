@@ -3,7 +3,9 @@ module github.com/kjbreil/goscript
 go 1.19
 
 require (
+	github.com/antonmedv/expr v1.12.1
 	github.com/goccy/go-yaml v1.10.0
+	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-memdb v1.3.4
 	github.com/kjbreil/hass-mqtt v0.0.0-20230227175915-0b31c3c2f807
 	github.com/kjbreil/hass-ws v0.0.0-20230302024432-33400fb5afb2
