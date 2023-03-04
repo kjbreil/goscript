@@ -13,9 +13,10 @@ type Trigger struct {
 
 	Unique   *Unique
 	Triggers []string
-	States   []string
-	Eval     []string
-	Func     TriggerFunc
+	Periodic
+	States []string
+	Eval   []string
+	Func   TriggerFunc
 }
 
 type Unique struct {
@@ -34,6 +35,7 @@ func Entities(entities ...string) []string {
 	return rtn
 }
 func (gs *GoScript) AddTrigger(t *Trigger) {
+	// setup the trigger object
 	t.uuid = uuid.New()
 	if t.Unique != nil {
 		t.Unique.ctx, t.Unique.cancel = context.WithCancel(context.Background())
@@ -64,8 +66,15 @@ func (gs *GoScript) AddTrigger(t *Trigger) {
 		i++
 	}
 
+	// for each entity add to the triggers map
 	for _, et := range t.Triggers {
 		gs.triggers[et] = append(gs.triggers[et], t)
+	}
+
+	// for each periodic add to the periodic map
+	// cron time is an array of triggers so multiple triggers can have same cron schedule
+	for _, ep := range t.Periodic {
+		gs.periodic[ep] = append(gs.periodic[ep], t)
 	}
 }
 
@@ -142,7 +151,7 @@ func (gs *GoScript) runTriggers(message model.Message) {
 			}
 			if passed {
 				task := &Task{
-					Message:     message,
+					Message:     &message,
 					States:      gs.GetStates(t.States),
 					gs:          gs,
 					states:      t.States,

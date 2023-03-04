@@ -10,9 +10,11 @@ import (
 )
 
 type GoScript struct {
-	config   *Config
-	mqtt     *hass_mqtt.Client
-	ws       *hass_ws.Client
+	config *Config
+	mqtt   *hass_mqtt.Client
+	ws     *hass_ws.Client
+
+	periodic map[string][]*Trigger
 	triggers map[string][]*Trigger
 
 	ctx    context.Context
@@ -40,6 +42,7 @@ func New(c *Config) (*GoScript, error) {
 	}
 
 	gs.triggers = make(map[string][]*Trigger)
+	gs.periodic = make(map[string][]*Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
 
 	return gs, nil
@@ -71,6 +74,8 @@ func (gs *GoScript) Connect() error {
 	time.Sleep(1 * time.Second)
 
 	go gs.runService()
+
+	go gs.runPeriodic()
 
 	return nil
 }

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"github.com/kjbreil/goscript"
-	"github.com/kjbreil/hass-ws/model"
 	"github.com/kjbreil/hass-ws/services"
 	"log"
 	"os"
@@ -24,20 +22,28 @@ func main() {
 	}
 
 	gs.AddTrigger(&goscript.Trigger{
+		Unique: &goscript.Unique{KillMe: true},
 		//Triggers: []string{"input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"},
 		Triggers: []string{"input_button.test_button"},
-		States:   []string{},
-		Unique:   &goscript.Unique{KillMe: true},
+		Periodic: goscript.Periodics("*/2 * * * *", ""),
+		States:   goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
+		Eval:     nil,
 		//Eval:     goscript.Eval(`float(state) > 10`, `state == "on"`),
-		Func: func(t *goscript.Task, message model.Message, states goscript.States) {
-			fmt.Println("flipping")
-			gs.CallService(services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle")))
-			fmt.Println("waiting 5 seconds")
+		Func: func(t *goscript.Task) {
+			log.Println("flipping")
+			log.Println(t.States["input_boolean.test_toggle"].State)
+			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
+			log.Println("waiting 5 seconds")
 			if ok := t.Sleep(5 * time.Second); !ok {
 				return
 			}
-			fmt.Println("flipping at end")
-			gs.CallService(services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle")))
+
+			//if ok := t.WaitUntil("input_number.test_number", nil, 5*time.Second); !ok {
+			//	return
+			//}
+			log.Println("flipping at end")
+			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
+			log.Println(t.States["input_boolean.test_toggle"].State)
 
 		},
 	})

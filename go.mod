@@ -3,6 +3,7 @@ module github.com/kjbreil/goscript
 go 1.19
 
 require (
+	github.com/adhocore/gronx v1.1.2
 	github.com/antonmedv/expr v1.12.1
 	github.com/goccy/go-yaml v1.10.0
 	github.com/google/uuid v1.3.0
@@ -28,7 +29,3 @@ require (
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )
-
-replace github.com/kjbreil/hass-ws => /Users/kjell/dev/hass-ws
-
-replace github.com/kjbreil/hass-mqtt => /Users/kjell/dev/hass-mqtt

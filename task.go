@@ -7,15 +7,17 @@ import (
 )
 
 type Task struct {
-	Message     model.Message
-	States      States
-	ctx         context.Context
-	cancel      context.CancelFunc
+	Message *model.Message
+	States  States
+	// task context
+	ctx    context.Context
+	cancel context.CancelFunc
+	//
 	states      []string
 	f           TriggerFunc
 	waitRequest chan *Trigger
 	waitDone    chan bool
-	gs          *GoScript
+	gs          *GoScript // TODO: Figure out how to not need gs in each task, needed for getstates on sleep right now
 }
 
 func (t *Task) Sleep(timeout time.Duration) bool {
