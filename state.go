@@ -31,15 +31,20 @@ func (s *states) Load(key string) (*State, bool) {
 }
 
 func (s *states) Find(keys []string) map[string]*State {
+	newKeys := make([]string, len(keys))
+	for i := range keys {
+		newKeys[i] = keys[i]
+	}
+
 	ss := make(map[string]*State)
 	s.s.Range(func(key, value any) bool {
-		if len(keys) == 0 {
+		if len(newKeys) == 0 {
 			return false
 		}
-		for i, k := range keys {
+		for i, k := range newKeys {
 			if key == k {
-				ss[k] = value.(*State)
-				keys = append(keys[:i], keys[i+1:]...)
+				ss[key.(string)] = value.(*State)
+				newKeys = append(newKeys[:i], newKeys[i+1:]...)
 				break
 			}
 		}

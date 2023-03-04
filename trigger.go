@@ -24,8 +24,15 @@ type Unique struct {
 	cancel context.CancelFunc
 }
 
-type TriggerFunc func(t *Task, message model.Message, states States)
+type TriggerFunc func(t *Task)
 
+func Entities(entities ...string) []string {
+	var rtn []string
+	for _, e := range entities {
+		rtn = append(rtn, e)
+	}
+	return rtn
+}
 func (gs *GoScript) AddTrigger(t *Trigger) {
 	t.uuid = uuid.New()
 	if t.Unique != nil {
@@ -62,6 +69,17 @@ func (gs *GoScript) AddTrigger(t *Trigger) {
 	}
 }
 
+func (gs *GoScript) RemoveTrigger(t *Trigger) {
+	for _, et := range t.Triggers {
+		for i, te := range gs.triggers[et] {
+			if te.uuid == t.uuid {
+				gs.triggers[et] = append(gs.triggers[et][:i], gs.triggers[et][i+1:]...)
+				break
+			}
+		}
+	}
+}
+
 func (gs *GoScript) AddTriggers(triggers ...*Trigger) {
 	for _, t := range triggers {
 		gs.AddTrigger(t)
@@ -73,7 +91,7 @@ func Eval(exp ...string) []string {
 }
 
 func (gs *GoScript) runTriggers(message model.Message) {
-	funcToRun := make(map[uuid.UUID]Task)
+	funcToRun := make(map[uuid.UUID]*Task)
 
 	if tr, ok := gs.triggers[message.DomainEntity()]; ok {
 		for _, t := range tr {
@@ -123,30 +141,30 @@ func (gs *GoScript) runTriggers(message model.Message) {
 				}
 			}
 			if passed {
+				task := &Task{
+					Message:     message,
+					States:      gs.GetStates(t.States),
+					gs:          gs,
+					states:      t.States,
+					f:           t.Func,
+					waitRequest: make(chan *Trigger),
+					waitDone:    make(chan bool),
+				}
 				if t.Unique != nil {
 					t.Unique.cancel()
 					t.Unique.ctx, t.Unique.cancel = context.WithCancel(context.Background())
-					funcToRun[t.uuid] = Task{
-						f:      t.Func,
-						states: t.States,
-						ctx:    t.Unique.ctx,
-						cancel: t.Unique.cancel,
-					}
+					task.ctx, task.cancel = t.Unique.ctx, t.Unique.cancel
+					funcToRun[t.uuid] = task
 				} else {
-					ctx, cancel := context.WithCancel(context.Background())
-					funcToRun[uuid.New()] = Task{
-						f:      t.Func,
-						states: t.States,
-						ctx:    ctx,
-						cancel: cancel,
-					}
+					task.ctx, task.cancel = context.WithCancel(context.Background())
+					funcToRun[uuid.New()] = task
 				}
 			}
 		}
 	}
 
 	for _, t := range funcToRun {
-		ss := gs.GetStates(t.states)
-		go t.f(&t, message, ss)
+		go t.f(t)
+		go gs.taskWaitRequest(t)
 	}
 }
