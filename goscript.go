@@ -31,12 +31,12 @@ func New(c *Config) (*GoScript, error) {
 		config: c,
 	}
 
-	gs.mqtt, err = hass_mqtt.NewClient(gs.config.MQTT)
+	gs.mqtt, err = hass_mqtt.NewClient(*gs.config.MQTT)
 	if err != nil {
 		return nil, err
 	}
 
-	gs.ws, err = hass_ws.NewClient(&gs.config.Websocket)
+	gs.ws, err = hass_ws.NewClient(gs.config.Websocket)
 	if err != nil {
 		return nil, err
 	}
@@ -53,10 +53,12 @@ func (gs *GoScript) Connect() error {
 
 	gs.ctx, gs.cancel = context.WithCancel(context.Background())
 
-	//err = gs.mqtt.Connect()
-	//if err != nil {
-	//	return err
-	//}
+	if gs.mqtt != nil {
+		err = gs.mqtt.Connect()
+		if err != nil {
+			return err
+		}
+	}
 
 	gs.ws.AddSubscription(model.EventTypeAll)
 
@@ -64,12 +66,12 @@ func (gs *GoScript) Connect() error {
 
 	gs.ws.OnGetState = gs.handleGetStates
 
+	gs.ws.InitStates = true
+
 	err = gs.ws.Connect()
 	if err != nil {
 		return err
 	}
-
-	gs.ws.GetStates()
 
 	time.Sleep(1 * time.Second)
 

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	config, err := goscript.ParseConfig("config.yml")
+	config, err := goscript.ParseConfig("config.yml", nil)
 	if err != nil {
 		panic(err)
 	}
@@ -25,11 +25,21 @@ func main() {
 		Unique: &goscript.Unique{KillMe: true},
 		//Triggers: []string{"input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"},
 		Triggers: []string{"input_button.test_button"},
-		Periodic: goscript.Periodics("*/2 * * * *", ""),
+		Periodic: goscript.Periodics("* * * * *", ""),
 		States:   goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
 		Eval:     nil,
 		//Eval:     goscript.Eval(`float(state) > 10`, `state == "on"`),
 		Func: func(t *goscript.Task) {
+			transition := 1.0
+			lightpct := 50.0
+			//kelvin := 2000.0
+			temperature := 50.3
+			gs.ServiceChan <- services.NewLightTurnOn(services.Targets("light.behind_couch"), &services.LightTurnOnParams{
+				BrightnessPct: &lightpct,
+				//Kelvin:        &kelvin,
+				ColorTemp:  &temperature,
+				Transition: &transition,
+			})
 			log.Println("flipping")
 			log.Println(t.States["input_boolean.test_toggle"].State)
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
@@ -48,8 +58,10 @@ func main() {
 		},
 	})
 
-	gs.Connect()
-
+	err = gs.Connect()
+	if err != nil {
+		panic(err)
+	}
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
