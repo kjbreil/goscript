@@ -32,23 +32,33 @@ func (t *Task) Sleep(timeout time.Duration) bool {
 }
 
 func (t *Task) WaitUntil(entityId string, eval []string, timeout time.Duration) bool {
-	timer := time.NewTimer(timeout)
 
 	t.waitRequest <- &Trigger{
 		Triggers: []string{entityId},
 		Eval:     eval,
 	}
-
-	select {
-	case <-t.waitDone:
-		t.States = t.gs.GetStates(t.states)
-		return true
-	case <-timer.C:
-		t.cancel()
-		return false
-	case <-t.ctx.Done():
-		return false
+	if timeout > 0 {
+		timer := time.NewTimer(timeout)
+		select {
+		case <-t.waitDone:
+			t.States = t.gs.GetStates(t.states)
+			return true
+		case <-timer.C:
+			t.cancel()
+			return false
+		case <-t.ctx.Done():
+			return false
+		}
+	} else {
+		select {
+		case <-t.waitDone:
+			t.States = t.gs.GetStates(t.states)
+			return true
+		case <-t.ctx.Done():
+			return false
+		}
 	}
+
 }
 
 func (gs *GoScript) taskWaitRequest(t *Task) {
