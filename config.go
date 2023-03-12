@@ -3,16 +3,18 @@ package goscript
 import (
 	"errors"
 	"github.com/goccy/go-yaml"
+	"github.com/iancoleman/strcase"
 	mqtt "github.com/kjbreil/hass-mqtt"
 	ws "github.com/kjbreil/hass-ws"
 	"github.com/mitchellh/mapstructure"
 	"os"
+	"strings"
 )
 
 type Config struct {
 	Websocket *ws.Config
 	MQTT      *mqtt.Config
-	modules   Modules
+	Modules   Modules
 }
 
 type Modules map[string]interface{}
@@ -22,7 +24,7 @@ var (
 )
 
 func (c *Config) GetModule(key string) (interface{}, error) {
-	if m, ok := c.modules[key]; ok {
+	if m, ok := c.Modules[key]; ok {
 		return m, nil
 	}
 	return nil, ErrModuleNotFound
@@ -35,13 +37,18 @@ func ParseConfig(filename string, modules Modules) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	var c Config
+	//err = yaml.Unmarshal(data, &c)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	err = yaml.Unmarshal(data, &configMap)
 	if err != nil {
 		return nil, err
 	}
-	var c Config
-	c.modules = make(map[string]interface{})
+	//var c Config
+	c.Modules = make(map[string]interface{})
 
 	if err := mapstructure.Decode(configMap, &c); err != nil {
 		return nil, err
@@ -49,11 +56,30 @@ func ParseConfig(filename string, modules Modules) (*Config, error) {
 
 	for k, v := range modules {
 		if m, ok := configMap[k]; ok {
-			err = mapstructure.Decode(m, v)
+			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+				Result: v,
+				MatchName: func(mapKey, fieldName string) bool {
+					if strings.EqualFold(mapKey, fieldName) {
+						return true
+					}
+					if strings.EqualFold(mapKey, strcase.ToSnake(fieldName)) {
+						return true
+					}
+
+					return false
+				},
+			})
+
 			if err != nil {
 				return nil, err
 			}
-			c.modules[k] = v
+			err = decoder.Decode(m)
+
+			//err = mapstructure.Decode(m, v)
+			if err != nil {
+				return nil, err
+			}
+			c.Modules[k] = v
 		}
 	}
 
