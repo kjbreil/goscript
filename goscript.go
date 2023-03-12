@@ -2,6 +2,7 @@ package goscript
 
 import (
 	"context"
+	"errors"
 	hass_mqtt "github.com/kjbreil/hass-mqtt"
 	hass_ws "github.com/kjbreil/hass-ws"
 	"github.com/kjbreil/hass-ws/model"
@@ -20,9 +21,10 @@ type GoScript struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	ServiceChan chan services.Service
+	ServiceChan ServiceChan
 	states      states
 }
+type ServiceChan chan services.Service
 
 func New(c *Config) (*GoScript, error) {
 	var err error
@@ -56,7 +58,9 @@ func (gs *GoScript) Connect() error {
 	if gs.mqtt != nil {
 		err = gs.mqtt.Connect()
 		if err != nil {
-			return err
+			if !errors.Is(err, hass_mqtt.ErrNoDeviceFound) {
+				return err
+			}
 		}
 	}
 
@@ -96,4 +100,8 @@ func (gs *GoScript) runService() {
 func (gs *GoScript) Close() {
 	gs.cancel()
 	gs.ws.Close()
+}
+
+func (gs *GoScript) GetModule(key string) (interface{}, error) {
+	return gs.config.GetModule(key)
 }
