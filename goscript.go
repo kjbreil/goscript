@@ -16,8 +16,9 @@ type GoScript struct {
 	mqtt   *hass_mqtt.Client
 	ws     *hass_ws.Client
 
-	periodic map[string][]*Trigger
-	triggers map[string][]*Trigger
+	periodic      map[string][]*Trigger
+	triggers      map[string][]*Trigger
+	domainTrigger map[string][]*Trigger
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -48,6 +49,7 @@ func New(c *Config) (*GoScript, error) {
 	}
 
 	gs.triggers = make(map[string][]*Trigger)
+	gs.domainTrigger = make(map[string][]*Trigger)
 	gs.periodic = make(map[string][]*Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
 

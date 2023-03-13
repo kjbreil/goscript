@@ -2,6 +2,7 @@ package goscript
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/kjbreil/hass-ws/model"
 	"sync"
 )
@@ -53,6 +54,23 @@ func (s *states) Find(keys []string) map[string]*State {
 	return ss
 }
 
+func (s *states) FindDomain(keys []string) map[string]*State {
+
+	ss := make(map[string]*State)
+	for _, k := range keys {
+		s.s.Range(func(key, value any) bool {
+			switch value.(type) {
+			case *State:
+				if value.(*State).Domain == k {
+					ss[key.(string)] = value.(*State)
+				}
+			}
+			return true
+		})
+	}
+	return ss
+}
+
 func (gs *GoScript) GetState(domain, entityid string) *State {
 	s, _ := gs.states.Load(fmt.Sprintf("%s%s", domain, entityid))
 	return s
@@ -60,6 +78,11 @@ func (gs *GoScript) GetState(domain, entityid string) *State {
 
 func (gs *GoScript) GetStates(domainentity []string) map[string]*State {
 	rtn := gs.states.Find(domainentity)
+	return rtn
+}
+
+func (gs *GoScript) GetDomainStates(domainentity []string) map[string]*State {
+	rtn := gs.states.FindDomain(domainentity)
 	return rtn
 }
 
@@ -80,12 +103,17 @@ func (gs *GoScript) handleMessage(message model.Message) {
 
 			gs.states.Store(s)
 
-			gs.runTriggers(message)
+			funcToRun := gs.runTriggers(message)
+			for _, t := range funcToRun {
+				go t.run()
+			}
+
 		}
 	}
 }
 
 func (gs *GoScript) handleGetStates(states []model.Result) {
+	statesFuncToRun := make(map[uuid.UUID]*Task)
 
 	for _, sr := range states {
 		s := &State{
@@ -97,6 +125,10 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 		}
 
 		gs.states.Store(s)
+
+	}
+
+	for _, sr := range states {
 		domainEntity := sr.DomainEntity()
 		entityState := sr.State()
 		message := &model.Message{
@@ -118,8 +150,14 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 				Context:   sr.Context,
 			},
 		}
-		gs.runTriggers(*message)
 
+		funcToRun := gs.runTriggers(*message)
+		for k, t := range funcToRun {
+			statesFuncToRun[k] = t
+		}
+	}
+	for _, t := range statesFuncToRun {
+		go t.run()
 	}
 
 }

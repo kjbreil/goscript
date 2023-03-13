@@ -107,6 +107,13 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 		waitRequest: make(chan *Trigger),
 		waitDone:    make(chan bool),
 	}
+
+	domainStates := gs.GetDomainStates(tr.DomainTrigger)
+	for k, v := range domainStates {
+		task.States[k] = v
+		task.states = append(task.states, k)
+	}
+
 	if tr.Unique != nil {
 		tr.Unique.cancel()
 		tr.Unique.ctx, tr.Unique.cancel = context.WithCancel(context.Background())
