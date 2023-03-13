@@ -25,10 +25,11 @@ type GoScript struct {
 	ServiceChan ServiceChan
 	states      states
 
-	Logger logr.Logger
+	logger logr.Logger
 }
 type ServiceChan chan services.Service
 
+// New creates a new GoScript instance
 func New(c *Config) (*GoScript, error) {
 	var err error
 
@@ -67,28 +68,41 @@ func (gs *GoScript) Connect() error {
 				return err
 			}
 		}
+		gs.logger.Info("MQTT connected")
 	}
 
+	// Add a subscription for the websocket on all events
 	gs.ws.AddSubscription(model.EventTypeAll)
 
+	// Handle all messages
 	gs.ws.OnMessage = gs.handleMessage
-
+	// handle running get states
 	gs.ws.OnGetState = gs.handleGetStates
-
+	// setup hass_ws to initialize all states at connect. This is run through the triggers.
 	gs.ws.InitStates = true
 
 	err = gs.ws.Connect()
 	if err != nil {
 		return err
 	}
+	gs.logger.Info("Websocket connected")
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 
 	go gs.runService()
 
 	go gs.runPeriodic()
 
+	gs.logger.Info("GoScript started")
+
 	return nil
+}
+
+func (gs *GoScript) Logger(logger logr.Logger) {
+	gs.logger = logger
+}
+func (gs *GoScript) GetLogger() logr.Logger {
+	return gs.logger
 }
 
 func (gs *GoScript) runService() {
@@ -104,7 +118,10 @@ func (gs *GoScript) runService() {
 
 func (gs *GoScript) Close() {
 	gs.cancel()
-	gs.ws.Close()
+	err := gs.ws.Close()
+	if err != nil {
+		gs.logger.Error(err, "error closing websocket")
+	}
 }
 
 func (gs *GoScript) GetModule(key string) (interface{}, error) {

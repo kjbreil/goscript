@@ -89,7 +89,7 @@ func (gs *GoScript) taskWaitRequest(t *Task) {
 func (t *Task) run() {
 	defer func() {
 		if r := recover(); r != nil {
-			t.gs.Logger.Info(fmt.Sprintf("task exited: %v", r))
+			t.gs.logger.Info(fmt.Sprintf("task exited: %v", r))
 		}
 	}()
 	go t.gs.taskWaitRequest(t)

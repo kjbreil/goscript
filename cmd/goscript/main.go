@@ -26,9 +26,9 @@ func main() {
 
 	zapLog, err := zap.NewDevelopment()
 	if err != nil {
-		panic(fmt.Sprintf("who watches the watchmen (%v)?", err))
+		panic(fmt.Sprintf("zap logging could not be initialized", err))
 	}
-	gs.Logger = zapr.NewLogger(zapLog)
+	gs.Logger(zapr.NewLogger(zapLog))
 
 	gs.AddTrigger(&goscript.Trigger{
 		Unique: &goscript.Unique{KillMe: true},
