@@ -97,6 +97,28 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 		}
 
 		gs.states.Store(s)
+		domainEntity := sr.DomainEntity()
+		entityState := sr.State()
+		message := &model.Message{
+			Type: model.MessageTypeEvent,
+			Event: &model.Event{
+				Data: &model.Data{
+					EntityId: &domainEntity,
+					NewState: &model.State{
+						EntityId:    &domainEntity,
+						LastChanged: sr.LastChanged,
+						State:       &entityState,
+						Attributes:  sr.Attributes,
+						LastUpdated: sr.LastUpdated,
+						Context:     sr.Context,
+					},
+					OldState: nil,
+				},
+				EventType: model.EventTypeStateChanged,
+				Context:   sr.Context,
+			},
+		}
+		gs.runTriggers(*message)
 
 	}
 
