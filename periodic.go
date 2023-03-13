@@ -1,7 +1,6 @@
 package goscript
 
 import (
-	"context"
 	"github.com/adhocore/gronx"
 	"github.com/google/uuid"
 	"log"
@@ -63,30 +62,13 @@ func (gs *GoScript) runGronJob(gron *gronx.Gronx, start bool) {
 		for _, t := range triggers {
 
 			if due {
-				task := &Task{
-					Message:     nil,
-					States:      gs.GetStates(t.States),
-					gs:          gs,
-					states:      t.States,
-					f:           t.Func,
-					waitRequest: make(chan *Trigger),
-					waitDone:    make(chan bool),
-				}
-				if t.Unique != nil {
-					t.Unique.cancel()
-					t.Unique.ctx, t.Unique.cancel = context.WithCancel(context.Background())
-					task.ctx, task.cancel = t.Unique.ctx, t.Unique.cancel
-					funcToRun[t.uuid] = task
-				} else {
-					task.ctx, task.cancel = context.WithCancel(context.Background())
-					funcToRun[uuid.New()] = task
-				}
+				task := gs.newTask(t, nil)
+				funcToRun[task.uuid] = task
 			}
 		}
 	}
 
 	for _, t := range funcToRun {
-		go t.f(t)
-		go gs.taskWaitRequest(t)
+		go t.run()
 	}
 }

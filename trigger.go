@@ -150,30 +150,13 @@ func (gs *GoScript) runTriggers(message model.Message) {
 				}
 			}
 			if passed {
-				task := &Task{
-					Message:     &message,
-					States:      gs.GetStates(t.States),
-					gs:          gs,
-					states:      t.States,
-					f:           t.Func,
-					waitRequest: make(chan *Trigger),
-					waitDone:    make(chan bool),
-				}
-				if t.Unique != nil {
-					t.Unique.cancel()
-					t.Unique.ctx, t.Unique.cancel = context.WithCancel(context.Background())
-					task.ctx, task.cancel = t.Unique.ctx, t.Unique.cancel
-					funcToRun[t.uuid] = task
-				} else {
-					task.ctx, task.cancel = context.WithCancel(context.Background())
-					funcToRun[uuid.New()] = task
-				}
+				task := gs.newTask(t, &message)
+				funcToRun[task.uuid] = task
 			}
 		}
 	}
 
 	for _, t := range funcToRun {
-		go t.f(t)
-		go gs.taskWaitRequest(t)
+		go t.run()
 	}
 }

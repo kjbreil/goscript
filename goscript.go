@@ -3,6 +3,7 @@ package goscript
 import (
 	"context"
 	"errors"
+	"github.com/go-logr/logr"
 	hass_mqtt "github.com/kjbreil/hass-mqtt"
 	hass_ws "github.com/kjbreil/hass-ws"
 	"github.com/kjbreil/hass-ws/model"
@@ -23,6 +24,8 @@ type GoScript struct {
 
 	ServiceChan ServiceChan
 	states      states
+
+	Logger logr.Logger
 }
 type ServiceChan chan services.Service
 
@@ -50,6 +53,8 @@ func New(c *Config) (*GoScript, error) {
 	return gs, nil
 }
 
+// Connect connects to the WebSocket server and MQTT server as setup
+// all options need to be passed before firing connect, anything added after will have odd effects
 func (gs *GoScript) Connect() error {
 	var err error
 

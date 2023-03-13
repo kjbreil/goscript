@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"github.com/go-logr/zapr"
 	"github.com/kjbreil/goscript"
 	"github.com/kjbreil/hass-ws/services"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"os/signal"
@@ -21,6 +24,12 @@ func main() {
 		panic(err)
 	}
 
+	zapLog, err := zap.NewDevelopment()
+	if err != nil {
+		panic(fmt.Sprintf("who watches the watchmen (%v)?", err))
+	}
+	gs.Logger = zapr.NewLogger(zapLog)
+
 	gs.AddTrigger(&goscript.Trigger{
 		Unique: &goscript.Unique{KillMe: true},
 		//Triggers: []string{"input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"},
@@ -30,23 +39,12 @@ func main() {
 		Eval:     nil,
 		//Eval:     goscript.Eval(`float(state) > 10`, `state == "on"`),
 		Func: func(t *goscript.Task) {
-			transition := 1.0
-			lightpct := 50.0
-			//kelvin := 2000.0
-			temperature := 50.3
-			gs.ServiceChan <- services.NewLightTurnOn(services.Targets("light.behind_couch"), &services.LightTurnOnParams{
-				BrightnessPct: &lightpct,
-				//Kelvin:        &kelvin,
-				ColorTemp:  &temperature,
-				Transition: &transition,
-			})
 			log.Println("flipping")
 			log.Println(t.States["input_boolean.test_toggle"].State)
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
 			log.Println("waiting 5 seconds")
-			if ok := t.Sleep(5 * time.Second); !ok {
-				return
-			}
+
+			t.Sleep(10 * time.Second)
 
 			//if ok := t.WaitUntil("input_number.test_number", nil, 5*time.Second); !ok {
 			//	return
