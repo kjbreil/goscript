@@ -15,9 +15,10 @@ type Trigger struct {
 	Triggers      []string
 	DomainTrigger []string // DomainTrigger, triggers of everything in the domain, also attaches all states for the domain
 	Periodic
-	States []string
-	Eval   []string
-	Func   TriggerFunc
+	DomainStates []string
+	States       []string
+	Eval         []string
+	Func         TriggerFunc
 }
 
 type Unique struct {
@@ -44,6 +45,7 @@ func (gs *GoScript) AddTrigger(t *Trigger) {
 	entityTriggers := make(map[string]struct{})
 	domainTriggers := make(map[string]struct{})
 	entityStates := make(map[string]struct{})
+	domainStates := make(map[string]struct{})
 	for _, et := range t.Triggers {
 		entityTriggers[et] = struct{}{}
 		entityStates[et] = struct{}{}
@@ -54,10 +56,14 @@ func (gs *GoScript) AddTrigger(t *Trigger) {
 	for _, ed := range t.DomainTrigger {
 		domainTriggers[ed] = struct{}{}
 	}
+	for _, eds := range t.DomainStates {
+		domainStates[eds] = struct{}{}
+	}
 
 	t.Triggers = nil
 	t.States = nil
 	t.DomainTrigger = nil
+	t.DomainStates = nil
 
 	t.Triggers = make([]string, len(entityTriggers))
 	i := 0
@@ -77,6 +83,13 @@ func (gs *GoScript) AddTrigger(t *Trigger) {
 	i = 0
 	for k := range entityStates {
 		t.States[i] = k
+		i++
+	}
+
+	t.DomainStates = make([]string, len(domainStates))
+	i = 0
+	for k := range domainStates {
+		t.DomainStates[i] = k
 		i++
 	}
 
@@ -118,36 +131,34 @@ func Eval(exp ...string) []string {
 	return exp
 }
 
-func (gs *GoScript) runTriggers(message model.Message) map[uuid.UUID]*Task {
-	funcToRun := make(map[uuid.UUID]*Task)
+func (gs *GoScript) runTriggers(message model.Message) {
 
 	if tr, ok := gs.triggers[message.DomainEntity()]; ok {
 		for _, trigger := range tr {
-			gs.triggerDomainEntity(&message, trigger, funcToRun)
+			gs.triggerDomainEntity(&message, trigger)
 		}
 	}
 
 	if tr, ok := gs.domainTrigger[message.Domain()]; ok {
 		for _, trigger := range tr {
-			gs.triggerDomain(&message, trigger, funcToRun)
+			gs.triggerDomain(&message, trigger)
 		}
 	}
 
-	return funcToRun
 }
 
-func (gs *GoScript) triggerDomainEntity(message *model.Message, trigger *Trigger, funcToRun map[uuid.UUID]*Task) {
+func (gs *GoScript) triggerDomainEntity(message *model.Message, trigger *Trigger) {
 	passed := trigger.eval(message)
 	if passed {
 		task := gs.newTask(trigger, message)
-		funcToRun[task.uuid] = task
+		gs.funcToRun[task.uuid] = task
 	}
 }
-func (gs *GoScript) triggerDomain(message *model.Message, trigger *Trigger, funcToRun map[uuid.UUID]*Task) {
+func (gs *GoScript) triggerDomain(message *model.Message, trigger *Trigger) {
 	passed := trigger.eval(message)
 	if passed {
 		task := gs.newTask(trigger, message)
-		funcToRun[task.uuid] = task
+		gs.funcToRun[task.uuid] = task
 	}
 }
 

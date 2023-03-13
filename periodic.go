@@ -2,7 +2,6 @@ package goscript
 
 import (
 	"github.com/adhocore/gronx"
-	"github.com/google/uuid"
 	"log"
 	"time"
 )
@@ -42,7 +41,6 @@ func (gs *GoScript) runPeriodic() {
 }
 
 func (gs *GoScript) runGronJob(gron *gronx.Gronx, start bool) {
-	funcToRun := make(map[uuid.UUID]*Task)
 
 	for expr, triggers := range gs.periodic {
 		var err error
@@ -63,12 +61,9 @@ func (gs *GoScript) runGronJob(gron *gronx.Gronx, start bool) {
 
 			if due {
 				task := gs.newTask(t, nil)
-				funcToRun[task.uuid] = task
+				gs.funcToRun[task.uuid] = task
 			}
 		}
 	}
 
-	for _, t := range funcToRun {
-		go t.run()
-	}
 }

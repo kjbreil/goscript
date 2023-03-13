@@ -103,10 +103,7 @@ func (gs *GoScript) handleMessage(message model.Message) {
 
 			gs.states.Store(s)
 
-			funcToRun := gs.runTriggers(message)
-			for _, t := range funcToRun {
-				go t.run()
-			}
+			gs.runTriggers(message)
 
 		}
 	}
@@ -151,13 +148,10 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 			},
 		}
 
-		funcToRun := gs.runTriggers(*message)
-		for k, t := range funcToRun {
-			statesFuncToRun[k] = t
-		}
+		gs.runTriggers(*message)
 	}
-	for _, t := range statesFuncToRun {
-		go t.run()
+	for k, t := range statesFuncToRun {
+		gs.funcToRun[k] = t
 	}
 
 }

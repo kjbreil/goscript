@@ -87,7 +87,11 @@ func (gs *GoScript) taskWaitRequest(t *Task) {
 }
 
 func (t *Task) run() {
+	t.gs.mutex.Lock()
+	delete(t.gs.funcToRun, t.uuid)
+	t.gs.mutex.Unlock()
 	defer func() {
+		t.cancel()
 		if r := recover(); r != nil {
 			t.gs.logger.Info(fmt.Sprintf("task exited: %v", r))
 		}
@@ -95,6 +99,7 @@ func (t *Task) run() {
 	go t.gs.taskWaitRequest(t)
 
 	t.f(t)
+
 }
 
 func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
@@ -109,6 +114,12 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 	}
 
 	domainStates := gs.GetDomainStates(tr.DomainTrigger)
+	for k, v := range domainStates {
+		task.States[k] = v
+		task.states = append(task.states, k)
+	}
+
+	domainStates = gs.GetDomainStates(tr.DomainStates)
 	for k, v := range domainStates {
 		task.States[k] = v
 		task.states = append(task.states, k)

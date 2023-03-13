@@ -3,11 +3,14 @@ package goscript
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	hass_mqtt "github.com/kjbreil/hass-mqtt"
 	hass_ws "github.com/kjbreil/hass-ws"
 	"github.com/kjbreil/hass-ws/model"
 	"github.com/kjbreil/hass-ws/services"
+	"sync"
 	"time"
 )
 
@@ -20,6 +23,9 @@ type GoScript struct {
 	triggers      map[string][]*Trigger
 	domainTrigger map[string][]*Trigger
 
+	funcToRun map[uuid.UUID]*Task
+	mutex     sync.Mutex
+
 	ctx    context.Context
 	cancel context.CancelFunc
 
@@ -31,11 +37,12 @@ type GoScript struct {
 type ServiceChan chan services.Service
 
 // New creates a new GoScript instance
-func New(c *Config) (*GoScript, error) {
+func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	var err error
 
 	gs := &GoScript{
 		config: c,
+		logger: logger,
 	}
 
 	gs.mqtt, err = hass_mqtt.NewClient(*gs.config.MQTT)
@@ -47,11 +54,13 @@ func New(c *Config) (*GoScript, error) {
 	if err != nil {
 		return nil, err
 	}
+	gs.ws.Logger(gs.logger)
 
 	gs.triggers = make(map[string][]*Trigger)
 	gs.domainTrigger = make(map[string][]*Trigger)
 	gs.periodic = make(map[string][]*Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
+	gs.funcToRun = make(map[uuid.UUID]*Task)
 
 	return gs, nil
 }
@@ -91,6 +100,8 @@ func (gs *GoScript) Connect() error {
 
 	time.Sleep(100 * time.Millisecond)
 
+	go gs.runFunctions()
+
 	go gs.runService()
 
 	go gs.runPeriodic()
@@ -100,9 +111,6 @@ func (gs *GoScript) Connect() error {
 	return nil
 }
 
-func (gs *GoScript) Logger(logger logr.Logger) {
-	gs.logger = logger
-}
 func (gs *GoScript) GetLogger() logr.Logger {
 	return gs.logger
 }
@@ -114,6 +122,25 @@ func (gs *GoScript) runService() {
 			return
 		case s := <-gs.ServiceChan:
 			gs.ws.CallService(s)
+		}
+	}
+}
+
+func (gs *GoScript) runFunctions() {
+	defer func() {
+		fmt.Println("runFunctions exiting")
+	}()
+	timer := time.NewTicker(100 * time.Millisecond)
+	for {
+		select {
+		case <-gs.ctx.Done():
+			return
+		case <-timer.C:
+			gs.mutex.Lock()
+			for _, t := range gs.funcToRun {
+				go t.run()
+			}
+			gs.mutex.Unlock()
 		}
 	}
 }
