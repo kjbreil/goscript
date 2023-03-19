@@ -19,18 +19,24 @@ type GoScript struct {
 	mqtt   *hass_mqtt.Client
 	ws     *hass_ws.Client
 
+	// maps holding state based triggers
 	periodic      map[string][]*Trigger
 	triggers      map[string][]*Trigger
 	domainTrigger map[string][]*Trigger
 
+	devices map[string]*Device
+
+	// TODO: change to sync.Map
 	funcToRun map[uuid.UUID]*Task
 	mutex     sync.Mutex
 
+	// Context for the GoScript
 	ctx    context.Context
 	cancel context.CancelFunc
 
 	ServiceChan ServiceChan
-	states      states
+	// states store
+	states states
 
 	logger logr.Logger
 }
@@ -61,6 +67,7 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	gs.periodic = make(map[string][]*Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
 	gs.funcToRun = make(map[uuid.UUID]*Task)
+	gs.devices = make(map[string]*Device)
 
 	return gs, nil
 }
@@ -148,9 +155,11 @@ func (gs *GoScript) runFunctions() {
 func (gs *GoScript) Close() {
 	gs.cancel()
 	err := gs.ws.Close()
+	gs.mqtt.Disconnect()
 	if err != nil {
 		gs.logger.Error(err, "error closing websocket")
 	}
+
 }
 
 func (gs *GoScript) GetModule(key string) (interface{}, error) {
