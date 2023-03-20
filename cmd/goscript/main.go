@@ -42,22 +42,6 @@ func main() {
 		},
 	})
 
-	//climate := device.New("Living Room", "living_room_virtual", "Virtual Climate 1000", "Kaygel", "0.0.1")
-	//
-	//deviceName := "Living Room"
-	//uniqueId := strcase.ToDelimited(fmt.Sprintf("%s", deviceName), uint8(0x2d))
-	//err = gs.AddDevice(climate, []entities.Entity{
-	//	//	&entities.Climate{
-	//	//		UniqueId: &uniqueId,
-	//	//		Name:     &deviceName,
-	//	//		TemperatureHighCommandFunc: func(message mqtt.Message, client mqtt.Client) {
-	//	//			fmt.Println("here")
-	//	//		},
-	//	//		TemperatureLowCommandFunc: func(message mqtt.Message, client mqtt.Client) {
-	//	//			fmt.Println("here")
-	//	//		},
-	//	//	},
-	//	//})
 	if err != nil {
 		panic(err)
 	}

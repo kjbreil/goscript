@@ -28,7 +28,7 @@ import (
 //
 // Func is the function to run when the criteria are met. Within the trigger function a *Task is available to give
 // information on the trigger. Killing the triggerfunc panics to exit. The runner recovers this panic, this also means
-// // that if your code panics the whole program will not crash but will continue. Panic will be written to the logs.
+// that if your code panics the whole program will not crash but will continue. Panic will be written to the logs.
 type Trigger struct {
 	uuid uuid.UUID
 
