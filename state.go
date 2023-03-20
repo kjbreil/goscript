@@ -10,6 +10,14 @@ import (
 type states struct {
 	s sync.Map
 }
+type State struct {
+	DomainEntity string
+	Domain       string
+	Entity       string
+	State        string
+	Attributes   map[string]interface{}
+}
+
 type States map[string]*State
 
 func (s *states) Store(ps *State) {
@@ -154,4 +162,14 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 		gs.funcToRun[k] = t
 	}
 
+}
+
+func MessageState(message *model.Message) *State {
+	return &State{
+		DomainEntity: message.DomainEntity(),
+		Domain:       message.Domain(),
+		Entity:       message.EntityID(),
+		State:        message.State(),
+		Attributes:   message.Attributes(),
+	}
 }

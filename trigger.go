@@ -2,10 +2,8 @@ package goscript
 
 import (
 	"context"
-	"github.com/antonmedv/expr"
 	"github.com/google/uuid"
 	"github.com/kjbreil/hass-ws/model"
-	"strconv"
 )
 
 type Trigger struct {
@@ -160,55 +158,4 @@ func (gs *GoScript) triggerDomain(message *model.Message, trigger *Trigger) {
 		task := gs.newTask(trigger, message)
 		gs.funcToRun[task.uuid] = task
 	}
-}
-
-func (tr *Trigger) eval(message *model.Message) bool {
-	passed := !(len(tr.Eval) > 0)
-	for _, e := range tr.Eval {
-		atoi := expr.Function(
-			"float",
-			func(params ...any) (any, error) {
-				return strconv.ParseFloat(params[0].(string), 64)
-			},
-		)
-
-		program, err := expr.Compile(e, expr.Env(map[string]interface{}{}),
-			expr.AllowUndefinedVariables(),
-			expr.AsBool(),
-			atoi)
-		if err != nil {
-			continue
-		}
-
-		env := make(map[string]interface{})
-		env["state"] = message.State()
-
-		// add attributes to env
-		if attr := message.Attributes(); attr != nil {
-			for k, v := range attr {
-				for _, c := range program.Constants {
-					switch c.(type) {
-					case string:
-						if k == c.(string) {
-							env[c.(string)] = v
-						}
-					}
-
-				}
-			}
-		}
-
-		evald, err := expr.Run(program, env)
-
-		if err != nil {
-			// TODO: Add error to some display
-			continue
-		}
-		if evald.(bool) && !passed {
-			passed = true
-		}
-	}
-
-	return passed
-
 }
