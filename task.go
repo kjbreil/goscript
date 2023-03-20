@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+// Task is used within a TriggerFunc to give information about the task.
+// Message is the message that triggered the task.
+// States is all the states defined when the trigger was created. States gets updated each time the methods are run.
+// Task contains 3 methods: Sleep, WaitUntil and While to help processing within a function and handle being able to
+// properly kill the task externally.
 type Task struct {
 	Message *model.Message
 	States  States
@@ -24,6 +29,7 @@ type Task struct {
 }
 
 // Sleep waits for the timeout to occur and panics if the context is cancelled
+// The panic is caught by a recover
 func (t *Task) Sleep(timeout time.Duration) {
 	timer := time.NewTimer(timeout)
 	select {
@@ -34,7 +40,8 @@ func (t *Task) Sleep(timeout time.Duration) {
 	}
 }
 
-// WaitUntil waits
+// WaitUntil waits until the eval equals true. Timeout of 0 means no timeout
+// panics if the context is cancelled
 func (t *Task) WaitUntil(entityId string, eval []string, timeout time.Duration) bool {
 
 	t.waitRequest <- &Trigger{
@@ -63,6 +70,32 @@ func (t *Task) WaitUntil(entityId string, eval []string, timeout time.Duration) 
 		}
 	}
 
+}
+
+// WhileFunc is the function that runs inside of a task.While on a continuous loop until the while evals false
+type WhileFunc func()
+
+// While runs a function until the eval does not evaluate true
+// panics if the context is cancelled
+// take care to use a sleep within the whileFunc
+// best to keep the function inline so task.Sleep can be used
+func (t *Task) While(entityId string, eval []string, whileFunc WhileFunc) {
+	for {
+		if t.ctx.Err() != nil {
+			panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
+		}
+		t.States = t.gs.GetStates(t.states)
+		if eState, ok := t.States[entityId]; ok {
+			if Evaluates(map[string]*State{entityId: eState}, eval) {
+				whileFunc()
+			} else {
+				return
+			}
+		} else {
+			return
+		}
+
+	}
 }
 
 func (gs *GoScript) taskWaitRequest(t *Task) {

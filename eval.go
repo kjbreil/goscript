@@ -7,21 +7,18 @@ import (
 	"strconv"
 )
 
-func (tr *Trigger) eval(message *model.Message) bool {
-	passed := !(len(tr.Eval) > 0)
+func Eval(exp ...string) []string {
+	return exp
+}
 
-	states := map[string]*State{
-		message.DomainEntity(): MessageState(message),
-	}
-	for _, e := range tr.Eval {
+func Evaluates(states States, eval []string) bool {
+	passed := false
+	for _, e := range eval {
 		if Evaluate(states, e) {
 			passed = true
 		}
-
 	}
-
 	return passed
-
 }
 
 func Evaluate(states States, eval string) bool {
@@ -57,7 +54,6 @@ func Evaluate(states States, eval string) bool {
 								env[c.(string)] = v
 							}
 						}
-
 					}
 				}
 			}
@@ -90,5 +86,19 @@ func Evaluate(states States, eval string) bool {
 		passed = true
 	}
 
+	return passed
+}
+
+func (tr *Trigger) eval(message *model.Message) bool {
+	passed := !(len(tr.Eval) > 0)
+
+	states := map[string]*State{
+		message.DomainEntity(): MessageState(message),
+	}
+	for _, e := range tr.Eval {
+		if Evaluate(states, e) {
+			passed = true
+		}
+	}
 	return passed
 }

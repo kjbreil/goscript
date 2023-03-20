@@ -10,19 +10,19 @@ type Device struct {
 	entities []entities.Entity
 }
 
-func (gs *GoScript) AddDevice(dev *device.Device) (error, *Device) {
+func (gs *GoScript) AddDevice(dev *device.Device) (*Device, error) {
 	d := &Device{
 		dev: dev,
 	}
 
 	err := gs.mqtt.Add(d.dev)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	gs.devices[d.dev.GetUniqueId()] = d
 
-	return nil, d
+	return d, nil
 }
 
 func (d *Device) AddEntities(ets []entities.Entity) error {
