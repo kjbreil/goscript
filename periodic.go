@@ -2,18 +2,17 @@ package goscript
 
 import (
 	"github.com/adhocore/gronx"
-	"log"
 	"time"
 )
 
+// Periodic is the list of cron expressions to run periodically
 type Periodic []string
 
+// Periodics is a helper function to add multiple strings without needing a []string{}
 func Periodics(times ...string) []string {
 	rtn := make([]string, len(times))
 	//TODO: Validate the cron strings
-	for i := range times {
-		rtn[i] = times[i]
-	}
+	copy(rtn, times)
 	return rtn
 }
 
@@ -41,7 +40,6 @@ func (gs *GoScript) runPeriodic() {
 }
 
 func (gs *GoScript) runGronJob(gron *gronx.Gronx, start bool) {
-
 	for expr, triggers := range gs.periodic {
 		var err error
 		var due bool
@@ -52,18 +50,15 @@ func (gs *GoScript) runGronJob(gron *gronx.Gronx, start bool) {
 		} else {
 			due, err = gron.IsDue(expr)
 			if err != nil {
-				// TODO: Need error bus
-				log.Println(err)
+				gs.logger.Error(err, "gron job IsDue failed")
 				continue
 			}
 		}
 		for _, t := range triggers {
-
 			if due {
 				task := gs.newTask(t, nil)
 				gs.funcToRun[task.uuid] = task
 			}
 		}
 	}
-
 }

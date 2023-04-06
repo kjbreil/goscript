@@ -6,18 +6,19 @@ import (
 	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	hass_mqtt "github.com/kjbreil/hass-mqtt"
-	hass_ws "github.com/kjbreil/hass-ws"
+	hassmqtt "github.com/kjbreil/hass-mqtt"
+	hassws "github.com/kjbreil/hass-ws"
 	"github.com/kjbreil/hass-ws/model"
 	"github.com/kjbreil/hass-ws/services"
 	"sync"
 	"time"
 )
 
+// GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
 type GoScript struct {
 	config *Config
-	mqtt   *hass_mqtt.Client
-	ws     *hass_ws.Client
+	mqtt   *hassmqtt.Client
+	ws     *hassws.Client
 
 	// maps holding state based triggers
 	periodic      map[string][]*Trigger
@@ -42,6 +43,8 @@ type GoScript struct {
 
 	logger logr.Logger
 }
+
+// ServiceChan is a channel to send services to be run to
 type ServiceChan chan services.Service
 
 // New creates a new GoScript instance
@@ -53,12 +56,12 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 		logger: logger,
 	}
 
-	gs.mqtt, err = hass_mqtt.NewClientWithLogger(*gs.config.MQTT, gs.logger)
+	gs.mqtt, err = hassmqtt.NewClientWithLogger(*gs.config.MQTT, gs.logger)
 	if err != nil {
 		return nil, err
 	}
 
-	gs.ws, err = hass_ws.NewClientWithLogger(gs.config.Websocket, gs.logger)
+	gs.ws, err = hassws.NewClientWithLogger(gs.config.Websocket, gs.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +87,7 @@ func (gs *GoScript) Connect() error {
 	if gs.mqtt != nil {
 		err = gs.mqtt.Connect()
 		if err != nil {
-			if !errors.Is(err, hass_mqtt.ErrNoDeviceFound) {
+			if !errors.Is(err, hassmqtt.ErrNoDeviceFound) {
 				return err
 			}
 		}
@@ -122,7 +125,8 @@ func (gs *GoScript) Connect() error {
 	return nil
 }
 
-func (gs *GoScript) GetLogger() logr.Logger {
+// Logger returns the logr to create your own logs
+func (gs *GoScript) Logger() logr.Logger {
 	return gs.logger
 }
 
@@ -156,6 +160,7 @@ func (gs *GoScript) runFunctions() {
 	}
 }
 
+// Close the connections to WebSocket and MQTT
 func (gs *GoScript) Close() {
 	gs.cancel()
 	err := gs.ws.Close()
@@ -163,9 +168,9 @@ func (gs *GoScript) Close() {
 	if err != nil {
 		gs.logger.Error(err, "error closing websocket")
 	}
-
 }
 
+// GetModule returns the config module in interface{} form, must be cast to module type
 func (gs *GoScript) GetModule(key string) (interface{}, error) {
 	return gs.config.GetModule(key)
 }
