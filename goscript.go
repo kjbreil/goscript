@@ -26,6 +26,8 @@ type GoScript struct {
 
 	devices map[string]*Device
 
+	areaRegistry map[string][]model.Result
+
 	// TODO: change to sync.Map
 	funcToRun map[uuid.UUID]*Task
 	mutex     sync.Mutex
@@ -51,16 +53,16 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 		logger: logger,
 	}
 
-	gs.mqtt, err = hass_mqtt.NewClient(*gs.config.MQTT)
+	gs.mqtt, err = hass_mqtt.NewClientWithLogger(*gs.config.MQTT, gs.logger)
 	if err != nil {
 		return nil, err
 	}
 
-	gs.ws, err = hass_ws.NewClient(gs.config.Websocket)
+	gs.ws, err = hass_ws.NewClientWithLogger(gs.config.Websocket, gs.logger)
 	if err != nil {
 		return nil, err
 	}
-	gs.ws.Logger(gs.logger)
+	gs.ws.Logger()
 
 	gs.triggers = make(map[string][]*Trigger)
 	gs.domainTrigger = make(map[string][]*Trigger)
@@ -104,6 +106,8 @@ func (gs *GoScript) Connect() error {
 		return err
 	}
 	gs.logger.Info("Websocket connected")
+
+	gs.fillAreaRegistry()
 
 	time.Sleep(100 * time.Millisecond)
 
