@@ -3,7 +3,9 @@ package goscript
 import (
 	"context"
 	"github.com/google/uuid"
+	"github.com/kjbreil/goscript/helpers"
 	"github.com/kjbreil/hass-ws/model"
+	"time"
 )
 
 // Trigger takes in trigger items, domains or a schedule and runs a function based on any variation of the inputs.
@@ -39,6 +41,7 @@ type Trigger struct {
 	States       []string
 	DomainStates []string
 	Eval         []string
+	nextTime     *time.Time
 	Func         TriggerFunc
 }
 
@@ -52,6 +55,20 @@ type Unique struct {
 // TriggerFunc is the function to run when the criteria are met. Within the trigger function a *Task is available.
 // See Task for more information on what is available in Task.
 type TriggerFunc func(t *Task)
+
+func (t *Trigger) NextTime(tt time.Time) (*time.Time, error) {
+	if t.Periodic == nil {
+		return nil, nil
+	}
+
+	nt, err := helpers.NextTime(t.Periodic, tt)
+	if err != nil {
+		return nil, err
+	}
+
+	t.nextTime = &nt
+	return &nt, nil
+}
 
 // Entities is a simple helper function to create a []string. Will most likely be removed in the future.
 func Entities(entities ...string) []string {

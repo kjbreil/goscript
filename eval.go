@@ -89,13 +89,13 @@ func Evaluate(states States, eval string) bool {
 	return passed
 }
 
-func (tr *Trigger) eval(message *model.Message) bool {
-	passed := !(len(tr.Eval) > 0)
+func (t *Trigger) eval(message *model.Message) bool {
+	passed := !(len(t.Eval) > 0)
 
 	states := map[string]*State{
 		message.DomainEntity(): MessageState(message),
 	}
-	for _, e := range tr.Eval {
+	for _, e := range t.Eval {
 		if Evaluate(states, e) {
 			passed = true
 		}

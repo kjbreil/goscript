@@ -29,12 +29,13 @@ func main() {
 	}
 
 	gs.AddTrigger(&goscript.Trigger{
-		Unique:        &goscript.Unique{KillMe: true},
-		Triggers:      []string{"input_button.test_button"},
-		DomainTrigger: []string{"input_button"},
-		Periodic:      goscript.Periodics("* * * * *", ""),
-		States:        goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
-		Eval:          nil,
+		Unique: &goscript.Unique{KillMe: true},
+		//Triggers:      []string{"input_button.test_button"},
+		//DomainTrigger: []string{"input_button"},
+		Periodic: goscript.Periodics("* * * * *", ""),
+		//Periodic: goscript.Periodics("*/1 * * * *"),
+		States: goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
+		Eval:   nil,
 		Func: func(t *goscript.Task) {
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
 			t.Sleep(10 * time.Second)
@@ -54,7 +55,7 @@ func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	gs.GetLogger().Info("Everything is set up")
+	gs.Logger().Info("Everything is set up")
 	<-done
 
 	gs.Close()

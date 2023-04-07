@@ -22,6 +22,7 @@ type GoScript struct {
 
 	// maps holding state based triggers
 	periodic      map[string][]*Trigger
+	nextPeriodic  time.Time
 	triggers      map[string][]*Trigger
 	domainTrigger map[string][]*Trigger
 
