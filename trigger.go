@@ -57,12 +57,13 @@ type Unique struct {
 type TriggerFunc func(t *Task)
 
 func (t *Trigger) NextTime(tt time.Time) (*time.Time, error) {
-	if t.Periodic == nil {
+	if len(t.Periodic) == 0 {
 		return nil, nil
 	}
 
 	nt, err := helpers.NextTime(t.Periodic, tt)
 	if err != nil {
+		t.nextTime = nil
 		return nil, err
 	}
 

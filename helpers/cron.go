@@ -60,6 +60,10 @@ func LastValidCron(crons []string, t time.Time) (string, error) {
 		}
 
 		if cronTime.Hour() <= t.Hour() && cronTime.Hour() >= lastHour {
+			if cronTime.Hour() == t.Hour() && cronTime.Minute() > t.Minute() {
+				continue
+			}
+
 			if lastHour != cronTime.Hour() {
 				lastExp = exp
 				lastHour = cronTime.Hour()
@@ -94,6 +98,10 @@ func NextValidCron(crons []string, t time.Time) (string, error) {
 		}
 
 		if cronTime.Hour() >= t.Hour() && cronTime.Hour() <= lastHour {
+			if cronTime.Hour() == t.Hour() && cronTime.Minute() < t.Minute() {
+				continue
+			}
+
 			if lastHour != cronTime.Hour() {
 				lastExp = exp
 				lastHour = cronTime.Hour()

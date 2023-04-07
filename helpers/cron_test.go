@@ -143,6 +143,15 @@ func TestLastValidCron(t *testing.T) {
 			want:    "25 1 * * *",
 			wantErr: false,
 		},
+		{
+			name: "test 1",
+			args: args{
+				crons: []string{"* 1 * * *", "18 11 * * *", "* 16 * * *"},
+				t:     time.Date(2023, 1, 1, 11, 16, 0, 0, time.Local),
+			},
+			want:    "* 1 * * *",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -185,6 +194,15 @@ func TestNextValidCron(t *testing.T) {
 				t:     time.Date(2023, 1, 1, 23, 0, 0, 0, time.Local),
 			},
 			want:    "0 1 * * *",
+			wantErr: false,
+		},
+		{
+			name: "test big diff",
+			args: args{
+				crons: []string{"* 1 * * *", "35 11 * * *", "* 21 * * *"},
+				t:     time.Date(2023, 1, 1, 11, 30, 0, 0, time.Local),
+			},
+			want:    "35 11 * * *",
 			wantErr: false,
 		},
 	}

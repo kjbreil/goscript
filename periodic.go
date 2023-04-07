@@ -31,6 +31,7 @@ func (gs *GoScript) runPeriodic() {
 			}
 		}
 	}
+	delete(gs.periodic, "")
 
 	// setup the next fire time for all triggers
 	gs.fillNextTime()
