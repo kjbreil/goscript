@@ -26,7 +26,7 @@ func (gs *GoScript) AddDevice(dev *device.Device) (*Device, error) {
 }
 
 func (d *Device) AddEntities(ets []entities.Entity) error {
-	d.entities = ets
+	d.entities = append(d.entities, ets...)
 	for _, et := range ets {
 		err := d.dev.Add(et)
 
@@ -37,6 +37,9 @@ func (d *Device) AddEntities(ets []entities.Entity) error {
 	return nil
 }
 
+func (d *Device) GetEntities() []entities.Entity {
+	return d.entities
+}
 func (d *Device) GetUniqueID() string {
 	return d.dev.GetUniqueId()
 }

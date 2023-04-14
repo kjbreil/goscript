@@ -145,7 +145,7 @@ func (gs *GoScript) runService() {
 
 func (gs *GoScript) runFunctions() {
 	defer func() {
-		fmt.Println("runFunctions exiting")
+		gs.logger.Info("runFunctions exited")
 	}()
 	timer := time.NewTicker(100 * time.Millisecond)
 	for {
