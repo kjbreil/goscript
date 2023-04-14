@@ -3,7 +3,7 @@ module github.com/kjbreil/goscript
 go 1.19
 
 require (
-	github.com/adhocore/gronx v1.3.0
+	github.com/adhocore/gronx v1.5.0
 	github.com/antonmedv/expr v1.12.5
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zapr v1.2.3
@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/iancoleman/strcase v0.2.0
 	github.com/kjbreil/hass-mqtt v0.2.2
-	github.com/kjbreil/hass-ws v0.1.2
+	github.com/kjbreil/hass-ws v0.2.0
 	github.com/mitchellh/mapstructure v1.5.0
 	go.uber.org/zap v1.24.0
 )
