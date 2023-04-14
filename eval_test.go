@@ -15,6 +15,22 @@ func TestEvaluate(t *testing.T) {
 		want bool
 	}{
 		{
+			name: "on",
+			args: args{
+				states: States{
+					"sensor.test": &State{
+						DomainEntity: "sensor.test",
+						Domain:       "humidity",
+						Entity:       "test",
+						State:        "on",
+						Attributes:   nil,
+					},
+				},
+				eval: `state == "on"`,
+			},
+			want: true,
+		},
+		{
 			name: "float",
 			args: args{
 				states: States{

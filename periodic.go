@@ -47,27 +47,6 @@ func (gs *GoScript) runPeriodic() {
 			return
 		}
 	}
-
-	//gron := gronx.New()
-	//// try and run the jobs right away this will run the every minute ones and at start ones
-	//go gs.runGronJob(&gron, true)
-	//// Wait until the next whole minute to start the ticker
-	//now := time.Now()
-	//nowMinute, _ := time.Parse("2006-01-02T15:04Z07:00", now.Format("2006-01-02T15:04Z07:00"))
-	//nextMinute := nowMinute.Add(time.Minute)
-	//dur := nextMinute.Sub(now)
-	//time.Sleep(dur)
-	//
-	//ticker := time.NewTicker(time.Minute)
-	//for {
-	//	select {
-	//	case <-ticker.C:
-	//		go gs.runGronJob(&gron, false)
-	//	case <-gs.ctx.Done():
-	//		return
-	//	}
-	//}
-
 }
 
 func (gs *GoScript) shouldRunTrigger() {
@@ -85,7 +64,6 @@ func (gs *GoScript) shouldRunTrigger() {
 			if time.Now().After(*t.nextTime) {
 				task := gs.newTask(t, nil)
 				gs.funcToRun[task.uuid] = task
-
 				_, err := t.NextTime(time.Now())
 				if err != nil {
 					gs.Logger().Error(err, "setting next time failed")

@@ -33,9 +33,9 @@ func (gs *GoScript) fillAreaRegistry() {
 			continue
 		}
 		if entity.DeviceId != nil {
-			areaId, ok := devices[*entity.DeviceId]
+			areaID, ok := devices[*entity.DeviceId]
 			if ok {
-				gs.areaRegistry[areaId] = append(gs.areaRegistry[areaId], entity)
+				gs.areaRegistry[areaID] = append(gs.areaRegistry[areaID], entity)
 			}
 		}
 	}

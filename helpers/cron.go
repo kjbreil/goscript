@@ -21,6 +21,14 @@ func CronToTime(cron string, t time.Time) (time.Time, error) {
 
 	return tickTime, err
 }
+func MustCronToTime(cron string, t time.Time) time.Time {
+	tickTime, err := gronx.NextTickAfter(cron, t, true)
+	if err != nil {
+		panic(err)
+	}
+
+	return tickTime
+}
 func CronToSegments(cron string) ([6]int, error) {
 	segments, err := gronx.Segments(cron)
 	var segs [6]int

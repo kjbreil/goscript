@@ -42,10 +42,10 @@ func (t *Task) Sleep(timeout time.Duration) {
 
 // WaitUntil waits until the eval equals true. Timeout of 0 means no timeout
 // panics if the context is cancelled
-func (t *Task) WaitUntil(entityId string, eval []string, timeout time.Duration) bool {
+func (t *Task) WaitUntil(entityID string, eval []string, timeout time.Duration) bool {
 
 	t.waitRequest <- &Trigger{
-		Triggers: []string{entityId},
+		Triggers: []string{entityID},
 		Eval:     eval,
 	}
 	if timeout > 0 {
@@ -69,7 +69,6 @@ func (t *Task) WaitUntil(entityId string, eval []string, timeout time.Duration) 
 			panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
 		}
 	}
-
 }
 
 // WhileFunc is the function that runs inside of a task.While on a continuous loop until the while evals false
@@ -79,14 +78,14 @@ type WhileFunc func()
 // panics if the context is cancelled
 // take care to use a sleep within the whileFunc
 // best to keep the function inline so task.Sleep can be used
-func (t *Task) While(entityId string, eval []string, whileFunc WhileFunc) {
+func (t *Task) While(entityID string, eval []string, whileFunc WhileFunc) {
 	for {
 		if t.ctx.Err() != nil {
 			panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
 		}
 		t.States = t.gs.GetStates(t.states)
-		if eState, ok := t.States[entityId]; ok {
-			if Evaluates(map[string]*State{entityId: eState}, eval) {
+		if eState, ok := t.States[entityID]; ok {
+			if Evaluates(map[string]*State{entityID: eState}, eval) {
 				whileFunc()
 			} else {
 				return
@@ -94,7 +93,6 @@ func (t *Task) While(entityId string, eval []string, whileFunc WhileFunc) {
 		} else {
 			return
 		}
-
 	}
 }
 
@@ -116,7 +114,6 @@ func (gs *GoScript) taskWaitRequest(t *Task) {
 			return
 		}
 	}
-
 }
 
 func (t *Task) run() {
@@ -132,7 +129,6 @@ func (t *Task) run() {
 	go t.gs.taskWaitRequest(t)
 
 	t.f(t)
-
 }
 
 func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {

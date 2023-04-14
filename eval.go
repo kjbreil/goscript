@@ -48,9 +48,8 @@ func Evaluate(states States, eval string) bool {
 			if attr := state.Attributes; attr != nil {
 				for k, v := range attr {
 					for _, c := range program.Constants {
-						switch c.(type) {
-						case string:
-							if k == c.(string) {
+						if _, ok := c.(string); ok {
+							if c.(string) == k {
 								env[c.(string)] = v
 							}
 						}

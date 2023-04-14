@@ -101,38 +101,10 @@ func (gs *GoScript) AddTrigger(t *Trigger) {
 		domainStates[eds] = struct{}{}
 	}
 
-	t.Triggers = nil
-	t.States = nil
-	t.DomainTrigger = nil
-	t.DomainStates = nil
-
-	t.Triggers = make([]string, len(entityTriggers))
-	i := 0
-	for k := range entityTriggers {
-		t.Triggers[i] = k
-		i++
-	}
-
-	t.DomainTrigger = make([]string, len(domainTriggers))
-	i = 0
-	for k := range domainTriggers {
-		t.DomainTrigger[i] = k
-		i++
-	}
-
-	t.States = make([]string, len(entityStates))
-	i = 0
-	for k := range entityStates {
-		t.States[i] = k
-		i++
-	}
-
-	t.DomainStates = make([]string, len(domainStates))
-	i = 0
-	for k := range domainStates {
-		t.DomainStates[i] = k
-		i++
-	}
+	t.Triggers = mapToSlice(entityTriggers)
+	t.DomainTrigger = mapToSlice(domainTriggers)
+	t.States = mapToSlice(entityStates)
+	t.DomainStates = mapToSlice(domainStates)
 
 	// for each entity add to the triggers map
 	for _, et := range t.Triggers {
@@ -149,6 +121,14 @@ func (gs *GoScript) AddTrigger(t *Trigger) {
 	for _, ep := range t.Periodic {
 		gs.periodic[ep] = append(gs.periodic[ep], t)
 	}
+}
+
+func mapToSlice(s map[string]struct{}) []string {
+	rtn := make([]string, 0, len(s))
+	for k := range s {
+		rtn = append(rtn, k)
+	}
+	return rtn
 }
 
 // RemoveTrigger can be used to remove a trigger while program is running.

@@ -25,7 +25,7 @@ func (s *states) Store(ps *State) {
 }
 
 func (ss States) Entities() []string {
-	var en []string
+	en := make([]string, 0, len(ss))
 	for _, s := range ss {
 		en = append(en, s.DomainEntity)
 	}
@@ -41,9 +41,7 @@ func (s *states) Load(key string) (*State, bool) {
 
 func (s *states) Find(keys []string) map[string]*State {
 	newKeys := make([]string, len(keys))
-	for i := range keys {
-		newKeys[i] = keys[i]
-	}
+	copy(newKeys, keys)
 
 	ss := make(map[string]*State)
 	s.s.Range(func(key, value any) bool {
@@ -63,12 +61,10 @@ func (s *states) Find(keys []string) map[string]*State {
 }
 
 func (s *states) FindDomain(keys []string) map[string]*State {
-
 	ss := make(map[string]*State)
 	for _, k := range keys {
 		s.s.Range(func(key, value any) bool {
-			switch value.(type) {
-			case *State:
+			if _, ok := value.(*State); ok {
 				if value.(*State).Domain == k {
 					ss[key.(string)] = value.(*State)
 				}
@@ -95,9 +91,7 @@ func (gs *GoScript) GetDomainStates(domainentity []string) map[string]*State {
 }
 
 func (gs *GoScript) handleMessage(message model.Message) {
-	switch message.Type {
-	case model.MessageTypeEvent:
-
+	if message.Type == model.MessageTypeEvent {
 		switch message.Event.EventType {
 		case model.EventTypeStateChanged:
 
@@ -112,7 +106,6 @@ func (gs *GoScript) handleMessage(message model.Message) {
 			gs.states.Store(s)
 
 			gs.runTriggers(message)
-
 		}
 	}
 }
@@ -130,7 +123,6 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 		}
 
 		gs.states.Store(s)
-
 	}
 
 	for _, sr := range states {
@@ -161,7 +153,6 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 	for k, t := range statesFuncToRun {
 		gs.funcToRun[k] = t
 	}
-
 }
 
 func MessageState(message *model.Message) *State {

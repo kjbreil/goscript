@@ -20,7 +20,7 @@ func main() {
 
 	zapLog, err := zap.NewDevelopment()
 	if err != nil {
-		panic(fmt.Sprintf("zap logging could not be initialized", err))
+		panic(fmt.Errorf("zap logging could not be initialized: %v", err))
 	}
 
 	gs, err := goscript.New(config, zapr.NewLogger(zapLog))
