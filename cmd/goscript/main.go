@@ -1,11 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"github.com/go-logr/zapr"
 	"github.com/kjbreil/goscript"
 	"github.com/kjbreil/hass-ws/services"
-	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,12 +15,7 @@ func main() {
 		panic(err)
 	}
 
-	zapLog, err := zap.NewDevelopment()
-	if err != nil {
-		panic(fmt.Errorf("zap logging could not be initialized: %v", err))
-	}
-
-	gs, err := goscript.New(config, zapr.NewLogger(zapLog))
+	gs, err := goscript.New(config, goscript.DefaultLogger())
 	if err != nil {
 		panic(err)
 	}

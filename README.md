@@ -1,4 +1,4 @@
-[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/posener/goreadme)
+[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/kjbreil/goscript)
 
 # GoScript
 Something like PyScript for Home Assistant but in Go. Functionality is being added as needed for my automations but once I have finished what I need I will go through PyScript and backfill any missing functionality. There will be additions to what PyScript can like the ability to add new devices to Home Assistant through MQTT.
@@ -96,8 +96,30 @@ Within each TriggerFunc a task is available to get information from.
 
 `task.While(entityId, eval, whileFunc)` Runs the whileFunc until the eval is false. task.Sleep should be used within your whileFunc to delay otherwise whileFunc will be run very quickly.
 
+## Services
+GoScript has a channel to put service calls onto. A set of default services to call is available in the [hass-ws](https://github.com/kjbreil/hass-ws) package however this is most likely not a complete list of services available in your Home Assistant installation since the service list is dynamic based on integrations installed. Generating your own service definitions is needed to interact properly with all your specific integrations.
+
+From your personal GoScript project directory run these commands to install the service generator and run it. You must have a config.yml with the websocket credentials defined. HassWSService will generate a folder called services and the files within, make sure you do not already have a folder named services in the root of your project.
+```bash
+go install github.com/kjbreil/hass-ws/helpers/HassWSService@latest
+go install github.com/campoy/jsonenums@latest
+go install golang.org/x/tools/cmd/stringer@latest
+HassWSService
+go generate ./...
+```
+
+### Calling a Service
+To call a service you create a service and then add options to the service. Check the source files for available options. They are not yet commented but will have comments in the future. I recommend using Home Assistant Developer Tools -> Services page to get a better understanding of what is needed for each call and to test. There is no reporting of requirements in the service definitions so be warned, some parameters are required and others are not, it is also conditional at times. For example `ClimateSetTemperature{}` needs `TargetTempHigh(float64)` and `TargetTempLow(float64)` when the mode is Heat/Cool however if the mode is Heat or the mode is Cool then `Temperature(float64)` is needed and both `TargetTempHigh(float64)` and `TargetTempLow(float64)` are ignored.
+```go
+service := services.NewClimateSetTemperature(services.Targets("climate.kitchen")).
+		HvacMode(services.HvacModeheat_cool).
+		TargetTempHigh(75).
+		TargetTempLow(65)
+gs.ServiceChan <- service
+```
+
 ## Logging 
-goscript.New is passed the config and a logger if you want to use one using the [logr](github.com/go-logr/logr) interface
+goscript.New is passed the config and a logger if you want to use one using the [logr](github.com/go-logr/logr) interface. There is a default `goscript.DefaultLogger()` available which will just print the logs to the terminal.
 
 ## Example
 ```go
@@ -120,13 +142,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	zapLog, err := zap.NewDevelopment()
-	if err != nil {
-		panic(fmt.Sprintf("zap logging could not be initialized", err))
-	}
-
-	gs, err := goscript.New(config, zapr.NewLogger(zapLog))
+	
+	gs, err := goscript.New(config, goscript.DefaultLogger())
 	if err != nil {
 		panic(err)
 	}

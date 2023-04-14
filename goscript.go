@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-logr/logr"
+	"github.com/go-logr/logr/funcr"
 	"github.com/google/uuid"
 	hassmqtt "github.com/kjbreil/hass-mqtt"
 	hassws "github.com/kjbreil/hass-ws"
@@ -174,4 +175,15 @@ func (gs *GoScript) Close() {
 // GetModule returns the config module in interface{} form, must be cast to module type
 func (gs *GoScript) GetModule(key string) (interface{}, error) {
 	return gs.config.GetModule(key)
+}
+
+func DefaultLogger() logr.Logger {
+	log := funcr.New(
+		func(pfx, args string) { fmt.Println(pfx, args) },
+		funcr.Options{
+			LogCaller:    funcr.None,
+			LogTimestamp: true,
+			Verbosity:    1,
+		})
+	return log.WithName("goscript")
 }
