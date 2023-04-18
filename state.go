@@ -150,8 +150,8 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 
 		gs.runTriggers(*message)
 	}
-	for k, t := range statesFuncToRun {
-		gs.funcToRun[k] = t
+	for _, t := range statesFuncToRun {
+		gs.taskToRun.add(t)
 	}
 }
 

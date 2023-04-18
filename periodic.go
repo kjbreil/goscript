@@ -24,7 +24,7 @@ func (gs *GoScript) runPeriodic() {
 			for i := range t.Periodic {
 				if len(t.Periodic[i]) == 0 {
 					task := gs.newTask(t, nil)
-					gs.funcToRun[task.uuid] = task
+					gs.taskToRun.add(task)
 
 					t.Periodic = append(t.Periodic[:i], t.Periodic[i+1:]...)
 				}
@@ -63,7 +63,8 @@ func (gs *GoScript) shouldRunTrigger() {
 			}
 			if time.Now().After(*t.nextTime) {
 				task := gs.newTask(t, nil)
-				gs.funcToRun[task.uuid] = task
+				gs.taskToRun.add(task)
+
 				_, err := t.NextTime(time.Now())
 				if err != nil {
 					gs.Logger().Error(err, "setting next time failed")
@@ -95,7 +96,7 @@ func (gs *GoScript) runGronJob(gron *gronx.Gronx, start bool) {
 		for _, t := range triggers {
 			if due {
 				task := gs.newTask(t, nil)
-				gs.funcToRun[task.uuid] = task
+				gs.taskToRun.add(task)
 			}
 		}
 	}

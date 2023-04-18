@@ -168,13 +168,13 @@ func (gs *GoScript) triggerDomainEntity(message *model.Message, trigger *Trigger
 	passed := trigger.eval(message)
 	if passed {
 		task := gs.newTask(trigger, message)
-		gs.funcToRun[task.uuid] = task
+		gs.taskToRun.add(task)
 	}
 }
 func (gs *GoScript) triggerDomain(message *model.Message, trigger *Trigger) {
 	passed := trigger.eval(message)
 	if passed {
 		task := gs.newTask(trigger, message)
-		gs.funcToRun[task.uuid] = task
+		gs.taskToRun.add(task)
 	}
 }

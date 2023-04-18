@@ -31,9 +31,7 @@ type GoScript struct {
 
 	areaRegistry map[string][]model.Result
 
-	// TODO: change to sync.Map
-	funcToRun map[uuid.UUID]*Task
-	mutex     sync.Mutex
+	taskToRun taskRun
 
 	// Context for the GoScript
 	ctx    context.Context
@@ -73,7 +71,10 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	gs.domainTrigger = make(map[string][]*Trigger)
 	gs.periodic = make(map[string][]*Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
-	gs.funcToRun = make(map[uuid.UUID]*Task)
+	gs.taskToRun = taskRun{
+		tasks: make(map[uuid.UUID]*Task),
+		m:     &sync.Mutex{},
+	}
 	gs.devices = make(map[string]*Device)
 
 	return gs, nil
@@ -153,11 +154,16 @@ func (gs *GoScript) runFunctions() {
 		case <-gs.ctx.Done():
 			return
 		case <-timer.C:
-			gs.mutex.Lock()
-			for _, t := range gs.funcToRun {
+			var ran []uuid.UUID
+			gs.taskToRun.m.Lock()
+			for u, t := range gs.taskToRun.tasks {
 				go t.run()
+				ran = append(ran, u)
 			}
-			gs.mutex.Unlock()
+			for _, u := range ran {
+				delete(gs.taskToRun.tasks, u)
+			}
+			gs.taskToRun.m.Unlock()
 		}
 	}
 }

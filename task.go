@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/kjbreil/hass-ws/model"
+	"sync"
 	"time"
 )
 
@@ -14,8 +15,9 @@ import (
 // Task contains 3 methods: Sleep, WaitUntil and While to help processing within a function and handle being able to
 // properly kill the task externally.
 type Task struct {
-	Message *model.Message
-	States  States
+	Message     *model.Message
+	States      States
+	ServiceChan ServiceChan
 	// task context
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -26,6 +28,17 @@ type Task struct {
 	waitRequest chan *Trigger
 	waitDone    chan bool
 	gs          *GoScript // TODO: Figure out how to not need gs in each task, needed for getstates on sleep right now
+}
+
+type taskRun struct {
+	tasks map[uuid.UUID]*Task
+	m     *sync.Mutex
+}
+
+func (tr *taskRun) add(t *Task) {
+	tr.m.Lock()
+	defer tr.m.Unlock()
+	tr.tasks[t.uuid] = t
 }
 
 // Sleep waits for the timeout to occur and panics if the context is cancelled
@@ -117,9 +130,6 @@ func (gs *GoScript) taskWaitRequest(t *Task) {
 }
 
 func (t *Task) run() {
-	t.gs.mutex.Lock()
-	delete(t.gs.funcToRun, t.uuid)
-	t.gs.mutex.Unlock()
 	defer func() {
 		t.cancel()
 		if r := recover(); r != nil {
