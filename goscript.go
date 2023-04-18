@@ -147,7 +147,7 @@ func (gs *GoScript) runFunctions() {
 	defer func() {
 		gs.logger.Info("runFunctions exited")
 	}()
-	timer := time.NewTicker(100 * time.Millisecond)
+	timer := time.NewTicker(10 * time.Millisecond)
 	for {
 		select {
 		case <-gs.ctx.Done():
