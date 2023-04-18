@@ -31,7 +31,7 @@ type GoScript struct {
 
 	areaRegistry map[string][]model.Result
 
-	taskToRun taskRun
+	taskToRun taskMap
 
 	// Context for the GoScript
 	ctx    context.Context
@@ -39,13 +39,14 @@ type GoScript struct {
 
 	ServiceChan ServiceChan
 	// states store
-	states states
+	states States
 
 	logger logr.Logger
 }
 
 // ServiceChan is a channel to send services to be run to
 type ServiceChan chan services.Service
+type CommandChan chan Command
 
 // New creates a new GoScript instance
 func New(c *Config, logger logr.Logger) (*GoScript, error) {
@@ -71,9 +72,14 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	gs.domainTrigger = make(map[string][]*Trigger)
 	gs.periodic = make(map[string][]*Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
-	gs.taskToRun = taskRun{
+	gs.taskToRun = taskMap{
 		tasks: make(map[uuid.UUID]*Task),
 		m:     &sync.Mutex{},
+	}
+
+	gs.states = States{
+		s: make(map[string]*State),
+		m: &sync.Mutex{},
 	}
 	gs.devices = make(map[string]*Device)
 
@@ -102,9 +108,9 @@ func (gs *GoScript) Connect() error {
 
 	// Handle all messages
 	gs.ws.OnMessage = gs.handleMessage
-	// handle running get states
+	// handle running get States
 	gs.ws.OnGetState = gs.handleGetStates
-	// setup hass_ws to initialize all states at connect. This is run through the triggers.
+	// setup hass_ws to initialize all States at connect. This is run through the triggers.
 	gs.ws.InitStates = true
 
 	err = gs.ws.Connect()
@@ -157,7 +163,7 @@ func (gs *GoScript) runFunctions() {
 			var ran []uuid.UUID
 			gs.taskToRun.m.Lock()
 			for u, t := range gs.taskToRun.tasks {
-				go t.run()
+				go gs.runTask(t)
 				ran = append(ran, u)
 			}
 			for _, u := range ran {

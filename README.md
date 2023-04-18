@@ -52,7 +52,7 @@ lights := inter.(*Lights)
 ```
 
 ## Triggers
-Three type of triggers are available. Standard domain.entity, all domain and then periodic. All triggers are automatically deduped and added to the states array.
+Three type of triggers are available. Standard domain.entity, all domain and then periodic. All triggers are automatically deduped and added to the States array.
 ### Domain Entity Triggers
 Triggers are an array of strings. Format for each string is "domain.entity", there is no validation that the domain entity combination exists.
 ### Domain Triggers
@@ -60,7 +60,7 @@ DomainTriggers is an array of strings containing just the domain. All entities w
 ### Periodic Triggers
 PeriodicTriggers is an array of strings containing the cron expression matching for when the trigger should run. A blank cron expression, "", will launch the trigger at program start. All cron jobs are evaluated every minute so no periodic job can be set to run quicker than 1 minute. Cron expression parsing and matching is provided by [gronx](github.com/adhocore/gronx).
 ### States
-States is an array of other entities that you would like the states to be available within the function that is run. All triggers are automatically added to states.
+States is an array of other entities that you would like the States to be available within the function that is run. All triggers are automatically added to States.
 ### Evaluation
 Evaluation is done through a list of strings that are run through [expr](github.com/antonmedv/expr) to evaluate the output. Like with PyScript type is important in the evaluation scripts. Check out [expr](github.com/antonmedv/expr) for more details on casting and converting. You cannot mix types in a single evaluation so `state == "on" || state > 10` will always return false due to failure parsing the evaluation. Attributes are available inside the evaluations,`color_temp > 100` will work as long as color_temp exists in the attributes of the entity and the data type is a float
 ### TriggerFunc
@@ -88,7 +88,7 @@ Within each TriggerFunc a task is available to get information from.
 
 `task.Message` contains the message that caused the trigger to fire.
 
-`task.Sates` contains all the states that were requested to be available by the trigger. The states are repopulated after each method is run to keep the current states fresh.
+`task.Sates` contains all the States that were requested to be available by the trigger. The States are repopulated after each method is run to keep the current States fresh.
 
 `task.Sleep(timeout)` will sleep for the specified duration.
 

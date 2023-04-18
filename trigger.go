@@ -20,7 +20,7 @@ import (
 // types to ensure consistent results.
 //
 // States is a list of entities to which the state will be available within the task function. All triggers are
-// automatically included in the list. DomainStates allows you to specify a whole domain to be included in the states.
+// automatically included in the list. DomainStates allows you to specify a whole domain to be included in the States.
 //
 // Evaluation is done through a list of strings that are run through github.com/antonmedv/expr to evaluate the output.
 // Like with PyScript type is important in the evaluation scripts. Check out github.com/antonmedv/expr for more details
@@ -36,7 +36,7 @@ type Trigger struct {
 
 	Unique        *Unique
 	Triggers      []string
-	DomainTrigger []string // DomainTrigger, triggers of everything in the domain, also attaches all states for the domain
+	DomainTrigger []string // DomainTrigger, triggers of everything in the domain, also attaches all States for the domain
 	Periodic
 	States       []string
 	DomainStates []string

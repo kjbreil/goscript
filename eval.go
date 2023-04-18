@@ -5,6 +5,7 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/kjbreil/hass-ws/model"
 	"strconv"
+	"sync"
 )
 
 func Eval(exp ...string) []string {
@@ -41,8 +42,11 @@ func Evaluate(states States, eval string) bool {
 
 	env := make(map[string]interface{})
 
-	if len(states) == 1 {
-		for _, state := range states {
+	states.m.Lock()
+	defer states.m.Unlock()
+
+	if len(states.s) == 1 {
+		for _, state := range states.s {
 			env["state"] = state.State
 			// add attributes to env
 			if attr := state.Attributes; attr != nil {
@@ -59,7 +63,7 @@ func Evaluate(states States, eval string) bool {
 		}
 	}
 
-	for _, state := range states {
+	for _, state := range states.s {
 		env[state.DomainEntity] = state.State
 		if attr := state.Attributes; attr != nil {
 			for k, v := range attr {
@@ -91,9 +95,13 @@ func Evaluate(states States, eval string) bool {
 func (t *Trigger) eval(message *model.Message) bool {
 	passed := !(len(t.Eval) > 0)
 
-	states := map[string]*State{
-		message.DomainEntity(): MessageState(message),
+	states := States{
+		s: map[string]*State{
+			message.DomainEntity(): MessageState(message),
+		},
+		m: &sync.Mutex{},
 	}
+
 	for _, e := range t.Eval {
 		if Evaluate(states, e) {
 			passed = true

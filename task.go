@@ -11,13 +11,13 @@ import (
 
 // Task is used within a TriggerFunc to give information about the task.
 // Message is the message that triggered the task.
-// States is all the states defined when the trigger was created. States gets updated each time the methods are run.
+// States is all the States defined when the trigger was created. States gets updated each time the methods are run.
 // Task contains 3 methods: Sleep, WaitUntil and While to help processing within a function and handle being able to
 // properly kill the task externally.
 type Task struct {
 	Message     *model.Message
 	States      States
-	ServiceChan ServiceChan
+	CommandChan ServiceChan
 	// task context
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -27,18 +27,23 @@ type Task struct {
 	uuid        uuid.UUID
 	waitRequest chan *Trigger
 	waitDone    chan bool
-	gs          *GoScript // TODO: Figure out how to not need gs in each task, needed for getstates on sleep right now
 }
 
-type taskRun struct {
+type taskMap struct {
 	tasks map[uuid.UUID]*Task
 	m     *sync.Mutex
 }
 
-func (tr *taskRun) add(t *Task) {
+func (tr *taskMap) add(t *Task) {
 	tr.m.Lock()
 	defer tr.m.Unlock()
 	tr.tasks[t.uuid] = t
+}
+
+func (tr *taskMap) delete(t *Task) {
+	tr.m.Lock()
+	defer tr.m.Unlock()
+	delete(tr.tasks, t.uuid)
 }
 
 // Sleep waits for the timeout to occur and panics if the context is cancelled
@@ -47,7 +52,8 @@ func (t *Task) Sleep(timeout time.Duration) {
 	timer := time.NewTimer(timeout)
 	select {
 	case <-timer.C:
-		t.States = t.gs.GetStates(t.states)
+		return
+		//t.States = t.gs.GetStates(t.states)
 	case <-t.ctx.Done():
 		panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
 	}
@@ -65,7 +71,7 @@ func (t *Task) WaitUntil(entityID string, eval []string, timeout time.Duration) 
 		timer := time.NewTimer(timeout)
 		select {
 		case <-t.waitDone:
-			t.States = t.gs.GetStates(t.states)
+			//t.States = t.gs.GetStates(t.states)
 			return true
 		case <-timer.C:
 			t.cancel()
@@ -76,7 +82,7 @@ func (t *Task) WaitUntil(entityID string, eval []string, timeout time.Duration) 
 	} else {
 		select {
 		case <-t.waitDone:
-			t.States = t.gs.GetStates(t.states)
+			//t.States = t.gs.GetStates(t.states)
 			return true
 		case <-t.ctx.Done():
 			panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
@@ -96,9 +102,12 @@ func (t *Task) While(entityID string, eval []string, whileFunc WhileFunc) {
 		if t.ctx.Err() != nil {
 			panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
 		}
-		t.States = t.gs.GetStates(t.states)
-		if eState, ok := t.States[entityID]; ok {
-			if Evaluates(map[string]*State{entityID: eState}, eval) {
+		//t.States = t.gs.GetStates(t.states)
+		if eState, ok := t.States.Get(entityID); ok {
+			if Evaluates(States{
+				s: map[string]*State{entityID: eState},
+				m: &sync.Mutex{},
+			}, eval) {
 				whileFunc()
 			} else {
 				return
@@ -129,14 +138,14 @@ func (gs *GoScript) taskWaitRequest(t *Task) {
 	}
 }
 
-func (t *Task) run() {
+func (gs *GoScript) runTask(t *Task) {
 	defer func() {
 		t.cancel()
 		if r := recover(); r != nil {
-			t.gs.logger.Info(fmt.Sprintf("task exited: %v", r))
+			gs.logger.Info(fmt.Sprintf("task exited: %v", r))
 		}
 	}()
-	go t.gs.taskWaitRequest(t)
+	go gs.taskWaitRequest(t)
 
 	t.f(t)
 }
@@ -144,8 +153,7 @@ func (t *Task) run() {
 func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 	task := &Task{
 		Message:     message,
-		States:      gs.GetStates(tr.States),
-		gs:          gs,
+		States:      gs.states.SubSet(tr.States),
 		states:      tr.States,
 		f:           tr.Func,
 		waitRequest: make(chan *Trigger),
@@ -153,16 +161,10 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 	}
 
 	domainStates := gs.GetDomainStates(tr.DomainTrigger)
-	for k, v := range domainStates {
-		task.States[k] = v
-		task.states = append(task.states, k)
-	}
+	task.States.Combine(domainStates)
 
 	domainStates = gs.GetDomainStates(tr.DomainStates)
-	for k, v := range domainStates {
-		task.States[k] = v
-		task.states = append(task.states, k)
-	}
+	task.States.Combine(domainStates)
 
 	if tr.Unique != nil {
 		tr.Unique.cancel()

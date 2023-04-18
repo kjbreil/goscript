@@ -7,8 +7,9 @@ import (
 	"sync"
 )
 
-type states struct {
-	s sync.Map
+type States struct {
+	s map[string]*State
+	m *sync.Mutex
 }
 type State struct {
 	DomainEntity string
@@ -18,76 +19,145 @@ type State struct {
 	Attributes   map[string]interface{}
 }
 
-type States map[string]*State
+func (s *States) Combine(cs *States) {
+	s.m.Lock()
+	defer s.m.Unlock()
 
-func (s *states) Store(ps *State) {
-	s.s.Store(ps.DomainEntity, ps)
+	cs.m.Lock()
+	defer cs.m.Unlock()
+	for k, v := range cs.s {
+		s.s[k] = v
+	}
 }
 
-func (ss States) Entities() []string {
-	en := make([]string, 0, len(ss))
-	for _, s := range ss {
-		en = append(en, s.DomainEntity)
+func (s *States) Store(ps *State) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	// Update the state pointer so it follows to tasks
+	if st, ok := s.s[ps.DomainEntity]; ok {
+		*st = *ps
+	} else {
+		s.s[ps.DomainEntity] = ps
+	}
+}
+
+func (s *States) Entities() []string {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	en := make([]string, 0, len(s.s))
+	for _, st := range s.s {
+		en = append(en, st.DomainEntity)
 	}
 	return en
 }
-func (s *states) Load(key string) (*State, bool) {
-	st, ok := s.s.Load(key)
+
+func (s *States) Get(key string) (*State, bool) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	st, ok := s.s[key]
 	if !ok {
 		return nil, ok
 	}
-	return st.(*State), true
+	return st, true
 }
 
-func (s *states) Find(keys []string) map[string]*State {
-	newKeys := make([]string, len(keys))
-	copy(newKeys, keys)
+func (s *States) Find(keys []string) map[string]*State {
+	s.m.Lock()
+	defer s.m.Unlock()
 
 	ss := make(map[string]*State)
-	s.s.Range(func(key, value any) bool {
-		if len(newKeys) == 0 {
-			return false
+
+	for _, k := range keys {
+		if st, ok := s.s[k]; ok {
+			ss[st.DomainEntity] = st
 		}
-		for i, k := range newKeys {
-			if key == k {
-				ss[key.(string)] = value.(*State)
-				newKeys = append(newKeys[:i], newKeys[i+1:]...)
-				break
-			}
-		}
-		return true
-	})
+	}
+
 	return ss
 }
 
-func (s *states) FindDomain(keys []string) map[string]*State {
-	ss := make(map[string]*State)
-	for _, k := range keys {
-		s.s.Range(func(key, value any) bool {
-			if _, ok := value.(*State); ok {
-				if value.(*State).Domain == k {
-					ss[key.(string)] = value.(*State)
-				}
-			}
-			return true
-		})
+func (s *States) Slice() []*State {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	var ss []*State
+	for _, st := range s.s {
+		ss = append(ss, st)
 	}
+
+	return ss
+}
+
+func (s *States) Map() map[string]*State {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	sts := make(map[string]*State)
+
+	for k, v := range s.s {
+		sts[k] = v
+	}
+
+	return sts
+}
+
+func (s *States) SubSet(keys []string) States {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	sts := States{
+		s: make(map[string]*State),
+		m: &sync.Mutex{},
+	}
+
+	for _, k := range keys {
+		if st, ok := s.s[k]; ok {
+			sts.Store(st)
+		}
+	}
+
+	return sts
+}
+
+func (s *States) FindDomain(keys []string) map[string]*State {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	ss := make(map[string]*State)
+
+	for _, st := range s.s {
+		for _, k := range keys {
+			if st.Domain == k {
+				ss[st.DomainEntity] = st
+			}
+		}
+	}
+
 	return ss
 }
 
 func (gs *GoScript) GetState(domain, entityid string) *State {
-	s, _ := gs.states.Load(fmt.Sprintf("%s%s", domain, entityid))
+	s, _ := gs.states.Get(fmt.Sprintf("%s%s", domain, entityid))
 	return s
 }
 
-func (gs *GoScript) GetStates(domainentity []string) map[string]*State {
-	rtn := gs.states.Find(domainentity)
-	return rtn
+func (gs *GoScript) GetStates(domainentity []string) *States {
+	rtn := States{
+		s: gs.states.Find(domainentity),
+		m: &sync.Mutex{},
+	}
+	return &rtn
 }
 
-func (gs *GoScript) GetDomainStates(domainentity []string) map[string]*State {
-	rtn := gs.states.FindDomain(domainentity)
-	return rtn
+func (gs *GoScript) GetDomainStates(domainentity []string) *States {
+	rtn := States{
+		s: gs.states.FindDomain(domainentity),
+		m: &sync.Mutex{},
+	}
+
+	return &rtn
 }
 
 func (gs *GoScript) handleMessage(message model.Message) {
@@ -104,6 +174,12 @@ func (gs *GoScript) handleMessage(message model.Message) {
 			}
 
 			gs.states.Store(s)
+
+			//gs.tasksRunning.m.Lock()
+			//for _, t := range gs.tasksRunning.tasks {
+			//	t.States.Store(s)
+			//}
+			//gs.tasksRunning.m.Unlock()
 
 			gs.runTriggers(message)
 		}
