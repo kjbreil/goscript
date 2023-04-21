@@ -175,12 +175,6 @@ func (gs *GoScript) handleMessage(message model.Message) {
 
 			gs.states.Store(s)
 
-			//gs.tasksRunning.m.Lock()
-			//for _, t := range gs.tasksRunning.tasks {
-			//	t.States.Store(s)
-			//}
-			//gs.tasksRunning.m.Unlock()
-
 			gs.runTriggers(message)
 		}
 	}

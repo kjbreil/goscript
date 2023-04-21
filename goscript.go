@@ -46,7 +46,6 @@ type GoScript struct {
 
 // ServiceChan is a channel to send services to be run to
 type ServiceChan chan services.Service
-type CommandChan chan Command
 
 // New creates a new GoScript instance
 func New(c *Config, logger logr.Logger) (*GoScript, error) {
