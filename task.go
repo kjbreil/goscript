@@ -3,6 +3,7 @@ package goscript
 import (
 	"context"
 	"fmt"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/kjbreil/hass-ws/model"
 	"sync"
@@ -17,7 +18,7 @@ import (
 type Task struct {
 	Message     *model.Message
 	States      States
-	CommandChan ServiceChan
+	ServiceChan ServiceChan
 	// task context
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -46,6 +47,20 @@ func (tr *taskMap) delete(t *Task) {
 	delete(tr.tasks, t.uuid)
 }
 
+// TaskFunc is used to include a task object in MQTT command functions.
+type TaskFunc func(t *Task) func(message mqtt.Message, client mqtt.Client)
+
+// TaskWrapMQTT wraps a trigger and TaskFunc setting up and passing the
+func (gs *GoScript) TaskWrapMQTT(tr *Trigger, fn TaskFunc) func(message mqtt.Message, client mqtt.Client) {
+	t := gs.newTask(tr, nil)
+	for _, s := range tr.States {
+		t.States.Insert(gs.states.Insert(&State{
+			DomainEntity: s,
+		}))
+	}
+	return fn(t)
+}
+
 // Sleep waits for the timeout to occur and panics if the context is cancelled
 // The panic is caught by a recover
 func (t *Task) Sleep(timeout time.Duration) {
@@ -57,6 +72,16 @@ func (t *Task) Sleep(timeout time.Duration) {
 	case <-t.ctx.Done():
 		panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
 	}
+}
+
+// Context return the current tasks context
+func (t *Task) Context() context.Context {
+	return t.ctx
+}
+
+// UUID return the current tasks uuid
+func (t *Task) UUID() uuid.UUID {
+	return t.uuid
 }
 
 // WaitUntil waits until the eval equals true. Timeout of 0 means no timeout
@@ -154,6 +179,7 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 	task := &Task{
 		Message:     message,
 		States:      gs.states.SubSet(tr.States),
+		ServiceChan: gs.ServiceChan,
 		states:      tr.States,
 		f:           tr.Func,
 		waitRequest: make(chan *Trigger),
@@ -170,7 +196,11 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 		tr.Unique.cancel()
 		tr.Unique.ctx, tr.Unique.cancel = context.WithCancel(context.Background())
 		task.ctx, task.cancel = tr.Unique.ctx, tr.Unique.cancel
-		task.uuid = tr.uuid
+		if tr.Unique.UUID != nil {
+			task.uuid = *tr.Unique.UUID
+		} else {
+			task.uuid = tr.uuid
+		}
 	} else {
 		task.ctx, task.cancel = context.WithCancel(context.Background())
 		newUUID := uuid.New()

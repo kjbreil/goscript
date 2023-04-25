@@ -48,6 +48,7 @@ type Trigger struct {
 // Unique makes the trigger unique, KillMe is a placeholder for now and does nothing.
 type Unique struct {
 	KillMe bool // even when false is true
+	UUID   *uuid.UUID
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -74,6 +75,14 @@ func (t *Trigger) NextTime(tt time.Time) (*time.Time, error) {
 // Entities is a simple helper function to create a []string. Will most likely be removed in the future.
 func Entities(entities ...string) []string {
 	return entities
+}
+
+func SetupTrigger(t *Trigger) *Trigger {
+	t.uuid = uuid.New()
+	if t.Unique != nil {
+		t.Unique.ctx, t.Unique.cancel = context.WithCancel(context.Background())
+	}
+	return t
 }
 
 // AddTrigger adds a trigger to the trigger map. There is no validation of a trigger.

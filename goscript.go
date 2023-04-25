@@ -44,9 +44,6 @@ type GoScript struct {
 	logger logr.Logger
 }
 
-// ServiceChan is a channel to send services to be run to
-type ServiceChan chan services.Service
-
 // New creates a new GoScript instance
 func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	var err error
@@ -136,17 +133,6 @@ func (gs *GoScript) Connect() error {
 // Logger returns the logr to create your own logs
 func (gs *GoScript) Logger() logr.Logger {
 	return gs.logger
-}
-
-func (gs *GoScript) runService() {
-	for {
-		select {
-		case <-gs.ctx.Done():
-			return
-		case s := <-gs.ServiceChan:
-			gs.ws.CallService(s)
-		}
-	}
 }
 
 func (gs *GoScript) runFunctions() {
