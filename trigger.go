@@ -49,8 +49,10 @@ type Trigger struct {
 type Unique struct {
 	KillMe bool // even when false is true
 	UUID   *uuid.UUID
-	ctx    context.Context
-	cancel context.CancelFunc
+
+	running *bool
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
 // TriggerFunc is the function to run when the criteria are met. Within the trigger function a *Task is available.
@@ -77,59 +79,58 @@ func Entities(entities ...string) []string {
 	return entities
 }
 
-func SetupTrigger(t *Trigger) *Trigger {
-	t.uuid = uuid.New()
-	if t.Unique != nil {
-		t.Unique.ctx, t.Unique.cancel = context.WithCancel(context.Background())
+// AddTrigger adds a trigger to the trigger map. There is no validation of a trigger.
+func (gs *GoScript) AddTrigger(tr *Trigger) {
+	tr = setupTrigger(tr)
+	// for each entity add to the triggers map
+	for _, et := range tr.Triggers {
+		gs.triggers[et] = append(gs.triggers[et], tr)
 	}
-	return t
+
+	// for each domain add to the domain trigger map
+	for _, edt := range tr.DomainTrigger {
+		gs.domainTrigger[edt] = append(gs.domainTrigger[edt], tr)
+	}
+
+	// for each periodic add to the periodic map
+	// cron time is an array of triggers so multiple triggers can have same cron schedule
+	for _, ep := range tr.Periodic {
+		gs.periodic[ep] = append(gs.periodic[ep], tr)
+	}
 }
 
-// AddTrigger adds a trigger to the trigger map. There is no validation of a trigger.
-func (gs *GoScript) AddTrigger(t *Trigger) {
+func setupTrigger(tr *Trigger) *Trigger {
 	// set up the trigger object
-	t.uuid = uuid.New()
-	if t.Unique != nil {
-		t.Unique.ctx, t.Unique.cancel = context.WithCancel(context.Background())
+	tr.uuid = uuid.New()
+	if tr.Unique != nil {
+		tr.Unique.ctx, tr.Unique.cancel = context.WithCancel(context.Background())
 	}
 	entityTriggers := make(map[string]struct{})
 	domainTriggers := make(map[string]struct{})
 	entityStates := make(map[string]struct{})
 	domainStates := make(map[string]struct{})
-	for _, et := range t.Triggers {
+	for _, et := range tr.Triggers {
 		entityTriggers[et] = struct{}{}
 		entityStates[et] = struct{}{}
 	}
-	for _, es := range t.States {
+	for _, es := range tr.States {
 		entityStates[es] = struct{}{}
 	}
-	for _, ed := range t.DomainTrigger {
+	for _, ed := range tr.DomainTrigger {
 		domainTriggers[ed] = struct{}{}
 	}
-	for _, eds := range t.DomainStates {
+	for _, eds := range tr.DomainStates {
 		domainStates[eds] = struct{}{}
 	}
 
-	t.Triggers = mapToSlice(entityTriggers)
-	t.DomainTrigger = mapToSlice(domainTriggers)
-	t.States = mapToSlice(entityStates)
-	t.DomainStates = mapToSlice(domainStates)
+	tr.Triggers = mapToSlice(entityTriggers)
+	tr.DomainTrigger = mapToSlice(domainTriggers)
 
-	// for each entity add to the triggers map
-	for _, et := range t.Triggers {
-		gs.triggers[et] = append(gs.triggers[et], t)
-	}
+	// TODO: make the States and DomainStates into states object prefilled
+	tr.States = mapToSlice(entityStates)
+	tr.DomainStates = mapToSlice(domainStates)
 
-	// for each domain add to the domain trigger map
-	for _, edt := range t.DomainTrigger {
-		gs.domainTrigger[edt] = append(gs.domainTrigger[edt], t)
-	}
-
-	// for each periodic add to the periodic map
-	// cron time is an array of triggers so multiple triggers can have same cron schedule
-	for _, ep := range t.Periodic {
-		gs.periodic[ep] = append(gs.periodic[ep], t)
-	}
+	return tr
 }
 
 func mapToSlice(s map[string]struct{}) []string {

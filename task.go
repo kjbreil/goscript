@@ -2,6 +2,7 @@ package goscript
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
@@ -28,6 +29,7 @@ type Task struct {
 	uuid        uuid.UUID
 	waitRequest chan *Trigger
 	waitDone    chan bool
+	running     *bool
 }
 
 type taskMap struct {
@@ -52,7 +54,14 @@ type TaskFunc func(t *Task) func(message mqtt.Message, client mqtt.Client)
 
 // TaskWrapMQTT wraps a trigger and TaskFunc setting up and passing the
 func (gs *GoScript) TaskWrapMQTT(tr *Trigger, fn TaskFunc) func(message mqtt.Message, client mqtt.Client) {
+	// setup the trigger
+	tr = setupTrigger(tr)
+
+	// create the task
 	t := gs.newTask(tr, nil)
+
+	// update the task states
+	// TODO: see about moving this to newTask, it should just work there
 	for _, s := range tr.States {
 		t.States.Insert(gs.states.Insert(&State{
 			DomainEntity: s,
@@ -143,6 +152,10 @@ func (t *Task) While(entityID string, eval []string, whileFunc WhileFunc) {
 	}
 }
 
+func (t *Task) Cancelled() bool {
+	return errors.Is(t.ctx.Err(), context.Canceled)
+}
+
 func (gs *GoScript) taskWaitRequest(t *Task) {
 	var trigger *Trigger
 	for {
@@ -164,14 +177,27 @@ func (gs *GoScript) taskWaitRequest(t *Task) {
 }
 
 func (gs *GoScript) runTask(t *Task) {
+	for *t.running {
+		timer := time.NewTimer(100)
+		select {
+		case <-timer.C:
+		case <-t.ctx.Done():
+			gs.logger.Info(fmt.Sprintf("task %s exited awaiting to run", t.uuid))
+			return
+		}
+	}
+
 	defer func() {
+		*t.running = false
 		t.cancel()
 		if r := recover(); r != nil {
 			gs.logger.Info(fmt.Sprintf("task exited: %v", r))
 		}
 	}()
-	go gs.taskWaitRequest(t)
 
+	*t.running = true
+
+	go gs.taskWaitRequest(t)
 	t.f(t)
 }
 
@@ -196,12 +222,19 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 		tr.Unique.cancel()
 		tr.Unique.ctx, tr.Unique.cancel = context.WithCancel(context.Background())
 		task.ctx, task.cancel = tr.Unique.ctx, tr.Unique.cancel
+
+		if tr.Unique.running == nil {
+			tr.Unique.running = new(bool)
+		}
+		task.running = tr.Unique.running
+
 		if tr.Unique.UUID != nil {
 			task.uuid = *tr.Unique.UUID
 		} else {
 			task.uuid = tr.uuid
 		}
 	} else {
+		task.running = new(bool)
 		task.ctx, task.cancel = context.WithCancel(context.Background())
 		newUUID := uuid.New()
 		task.uuid = newUUID
