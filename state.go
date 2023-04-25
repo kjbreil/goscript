@@ -30,7 +30,21 @@ func (s *States) Combine(cs *States) {
 	}
 }
 
-func (s *States) Store(ps *State) {
+// Insert only adds to the map if something does not exist already. Returns what is in the map whether added or not
+func (s *States) Insert(ps *State) *State {
+	s.m.Lock()
+	defer s.m.Unlock()
+	// Update the state pointer so it follows to tasks
+	if st, ok := s.s[ps.DomainEntity]; ok {
+		return st
+	} else {
+		s.s[ps.DomainEntity] = ps
+		return ps
+	}
+}
+
+// Upsert inserts a new record if one does not exist otherwise updates the data at the pointer so the update propigates
+func (s *States) Upsert(ps *State) *State {
 	s.m.Lock()
 	defer s.m.Unlock()
 	// Update the state pointer so it follows to tasks
@@ -39,6 +53,7 @@ func (s *States) Store(ps *State) {
 	} else {
 		s.s[ps.DomainEntity] = ps
 	}
+	return ps
 }
 
 func (s *States) Entities() []string {
@@ -114,7 +129,7 @@ func (s *States) SubSet(keys []string) States {
 
 	for _, k := range keys {
 		if st, ok := s.s[k]; ok {
-			sts.Store(st)
+			sts.Upsert(st)
 		}
 	}
 
@@ -173,7 +188,7 @@ func (gs *GoScript) handleMessage(message model.Message) {
 				Attributes:   message.Attributes(),
 			}
 
-			gs.states.Store(s)
+			gs.states.Upsert(s)
 
 			gs.runTriggers(message)
 		}
@@ -192,7 +207,7 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 			Attributes:   sr.Attributes,
 		}
 
-		gs.states.Store(s)
+		gs.states.Upsert(s)
 	}
 
 	for _, sr := range states {
