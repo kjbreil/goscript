@@ -32,26 +32,6 @@ type Task struct {
 	running     *bool
 }
 
-type taskMap struct {
-	tasks map[uuid.UUID]*Task
-	m     *sync.Mutex
-}
-
-func (tr *taskMap) add(t *Task) {
-	if t == nil {
-		return
-	}
-	tr.m.Lock()
-	defer tr.m.Unlock()
-	tr.tasks[t.uuid] = t
-}
-
-func (tr *taskMap) delete(t *Task) {
-	tr.m.Lock()
-	defer tr.m.Unlock()
-	delete(tr.tasks, t.uuid)
-}
-
 // TaskFunc is used to include a task object in MQTT command functions.
 type TaskFunc func(t *Task) func(message mqtt.Message, client mqtt.Client)
 
