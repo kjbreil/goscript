@@ -51,20 +51,22 @@ if err != nil {
 lights := inter.(*Lights)
 ```
 
-## Triggers
-Three type of triggers are available. Standard domain.entity, all domain and then periodic. All triggers are automatically deduped and added to the States array.
+## Trigger
+A trigger is what starts an automation. It contains the trigger reason and function to be run.
+### Unique
+Unique is an object that limits how the TriggerFunc runs. If just the blank object is provided any currently running functions will be killed and the current function will run after completion of currently running one. KillMe flag will kill to be run function and let the currently running one continue. UUID allows you to link multiple Uniques together.
 ### Domain Entity Triggers
-Triggers are an array of strings. Format for each string is "domain.entity", there is no validation that the domain entity combination exists.
+`Trigger.Triggers` are an array of strings. Format for each string is "domain.entity", there is no validation that the domain entity combination exists in your Home Assistant instance.
 ### Domain Triggers
-DomainTriggers is an array of strings containing just the domain. All entities within that domain will cause the trigger to fire.
+`Trigger.DomainTriggers` is an array of strings containing just the domain. All entities within that domain will cause the trigger to fire.
 ### Periodic Triggers
-PeriodicTriggers is an array of strings containing the cron expression matching for when the trigger should run. A blank cron expression, "", will launch the trigger at program start. All cron jobs are evaluated every minute so no periodic job can be set to run quicker than 1 minute. Cron expression parsing and matching is provided by [gronx](github.com/adhocore/gronx).
+`Trigger.PeriodicTriggers` is an array of strings containing the cron expression matching for when the trigger should run. A blank cron expression, "", will launch the trigger at program start. All cron jobs are evaluated every minute so no periodic job can be set to run quicker than 1 minute. Cron expression parsing and matching is provided by [gronx](github.com/adhocore/gronx).
 ### States
-States is an array of other entities that you would like the States to be available within the function that is run. All triggers are automatically added to States.
+`Trigger.States` is an array of other entities that you would like the States to be available within the function that is run. All triggers are automatically added to States.
 ### Evaluation
-Evaluation is done through a list of strings that are run through [expr](github.com/antonmedv/expr) to evaluate the output. Like with PyScript type is important in the evaluation scripts. Check out [expr](github.com/antonmedv/expr) for more details on casting and converting. You cannot mix types in a single evaluation so `state == "on" || state > 10` will always return false due to failure parsing the evaluation. Attributes are available inside the evaluations,`color_temp > 100` will work as long as color_temp exists in the attributes of the entity and the data type is a float
+`Trigger.Evaluation` is a list of strings that are run through [expr](github.com/antonmedv/expr) to evaluate the output. Like with PyScript type is important in the evaluation scripts. Check out [expr](github.com/antonmedv/expr) for more details on casting and converting. You cannot mix types in a single evaluation so `state == "on" || state > 10` will always return false due to failure parsing the evaluation. Attributes are available inside the evaluations,`color_temp > 100` will work as long as color_temp exists in the attributes of the entity and the data type is a float
 ### TriggerFunc
-Func is the function to run when the criteria are met. Within the trigger function a *Task is available to give information on the trigger. Killing the TriggerFunc panics to exit. The runner recovers this panic, this also means that if your code panics the whole program will not crash but will continue. Panic will be written to the logs.
+`Trigger.Func` is the function to run when the criteria are met. Within the trigger function a `*Task` is available to give information on the trigger. Killing the TriggerFunc panics to exit. The runner recovers this panic, this also means that if your code panics the whole program will not crash but will continue. Panic will be written to the logs.
 
 ### Example
 This trigger will fire at program startup, every minute and every time input.button.test_button is pressed. It will flip input_boolean.test_toggle, wait 10 seconds and flip it back
@@ -75,20 +77,20 @@ This trigger will fire at program startup, every minute and every time input.but
     Periodic:      goscript.Periodics("* * * * *", ""),
     States:        goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
     Eval:          nil,
-    Func: func(t *goscript.Task) {
+    Func: func(tr *goscript.Task) {
         gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
-        t.Sleep(10 * time.Second)
+        tr.Sleep(10 * time.Second)
         gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
     },
 }
 ```
 
 ## Task
-Within each TriggerFunc a task is available to get information from.
+Within each TriggerFunc a task object is available to get information from.
 
 `task.Message` contains the message that caused the trigger to fire.
 
-`task.Sates` contains all the States that were requested to be available by the trigger. The States are repopulated after each method is run to keep the current States fresh.
+`task.States` contains all the States that were requested to be available by the trigger. Use `task.States.Get(string)` to retrieve objects. The states held within are pointers to the actual states in GoScript and are updated in real time.
 
 `task.Sleep(timeout)` will sleep for the specified duration.
 
@@ -152,9 +154,9 @@ func main() {
 		Unique:        &goscript.Unique{KillMe: true},
 		Triggers:      []string{"input_button.test_button"},
 		States:        goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
-		Func: func(t *goscript.Task) {
+		Func: func(tr *goscript.Task) {
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
-			t.Sleep(10 * time.Second)
+			tr.Sleep(10 * time.Second)
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
 		},
 	})

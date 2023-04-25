@@ -10,10 +10,8 @@ import (
 
 // Trigger takes in trigger items, domains or a schedule and runs a function based on any variation of the inputs.
 //
-// If Unique is not nil then if the trigger function is already running the context of that trigger function will be
-// killed. To accomplish this it is important to only use the task methods within a trigger function instead of
-// time.Sleep or anything like that as then the function will not be killed and both will run at same time. If Unique is
-// nil then multiple functions can run at the same time.
+// If Unique is not nil then the trigger function will either kill off currently running trigger functions of the same
+// type or kill itself.
 //
 // Triggers can be on Entity's (full domain.entity format), Domains or on a Periodic schedule. Periodics do not get run
 // through Eval's but it is best to handle all evaluation within the function for Periodics mixed with other trigger
@@ -45,9 +43,13 @@ type Trigger struct {
 	Func         TriggerFunc
 }
 
-// Unique makes the trigger unique, KillMe is a placeholder for now and does nothing.
+// The Unique task will wait until the currently running task finishes to start. To quickly kill tasks that are
+// running it is important to only use the task methods within a trigger function instead of time.Sleep. If
+// Unique.KillMe is set to true the task will not be setup and will not run if another task is running of the same type.
+// Unique.UUID is used to link multiple triggers together. For example two triggers that control the same light and you
+// only want one of the trigger functions to run at a time.
 type Unique struct {
-	KillMe bool // even when false is true
+	KillMe bool
 	UUID   *uuid.UUID
 
 	running *bool
@@ -104,6 +106,9 @@ func setupTrigger(tr *Trigger) *Trigger {
 	tr.uuid = uuid.New()
 	if tr.Unique != nil {
 		tr.Unique.ctx, tr.Unique.cancel = context.WithCancel(context.Background())
+		if tr.Unique.running == nil {
+			tr.Unique.running = new(bool)
+		}
 	}
 	entityTriggers := make(map[string]struct{})
 	domainTriggers := make(map[string]struct{})

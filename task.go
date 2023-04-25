@@ -38,6 +38,9 @@ type taskMap struct {
 }
 
 func (tr *taskMap) add(t *Task) {
+	if t == nil {
+		return
+	}
 	tr.m.Lock()
 	defer tr.m.Unlock()
 	tr.tasks[t.uuid] = t
@@ -219,13 +222,19 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 	task.States.Combine(domainStates)
 
 	if tr.Unique != nil {
+
+		// KillMe checks if the task is running and exits rather than kill off the other task
+		if tr.Unique.KillMe {
+			if *tr.Unique.running {
+				gs.logger.Info(fmt.Sprintf("task %s tried to start but other task running and KillMe is true", tr.uuid))
+				return nil
+			}
+		}
+
 		tr.Unique.cancel()
 		tr.Unique.ctx, tr.Unique.cancel = context.WithCancel(context.Background())
 		task.ctx, task.cancel = tr.Unique.ctx, tr.Unique.cancel
 
-		if tr.Unique.running == nil {
-			tr.Unique.running = new(bool)
-		}
 		task.running = tr.Unique.running
 
 		if tr.Unique.UUID != nil {
@@ -236,8 +245,7 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 	} else {
 		task.running = new(bool)
 		task.ctx, task.cancel = context.WithCancel(context.Background())
-		newUUID := uuid.New()
-		task.uuid = newUUID
+		task.uuid = uuid.New()
 	}
 
 	return task

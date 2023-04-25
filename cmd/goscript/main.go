@@ -35,7 +35,7 @@ func main() {
 	//	},
 	//})
 	gs.AddTrigger(&goscript.Trigger{
-		//Unique: &goscript.Unique{KillMe: true},
+		Unique: &goscript.Unique{KillMe: true},
 		//Triggers:      []string{"input_button.test_button"},
 		//DomainTrigger: []string{"input_button"},
 		//Periodic: goscript.Periodics(""),
@@ -44,8 +44,7 @@ func main() {
 		Eval:     nil,
 		Func: func(t *goscript.Task) {
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
-			//t.Sleep(10 * time.Second)
-			time.Sleep(10 * time.Second)
+			t.Sleep(10 * time.Second)
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
 		},
 	})
