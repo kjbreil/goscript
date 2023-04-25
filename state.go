@@ -19,17 +19,6 @@ type State struct {
 	Attributes   map[string]interface{}
 }
 
-func (s *States) Combine(cs *States) {
-	s.m.Lock()
-	defer s.m.Unlock()
-
-	cs.m.Lock()
-	defer cs.m.Unlock()
-	for k, v := range cs.s {
-		s.s[k] = v
-	}
-}
-
 // Insert only adds to the map if something does not exist already. Returns what is in the map whether added or not
 func (s *States) Insert(ps *State) *State {
 	s.m.Lock()
@@ -43,7 +32,7 @@ func (s *States) Insert(ps *State) *State {
 	}
 }
 
-// Upsert inserts a new record if one does not exist otherwise updates the data at the pointer so the update propigates
+// Upsert inserts a new record if one does not exist otherwise updates the data at the pointer so the update propagates
 func (s *States) Upsert(ps *State) *State {
 	s.m.Lock()
 	defer s.m.Unlock()
@@ -56,6 +45,19 @@ func (s *States) Upsert(ps *State) *State {
 	return ps
 }
 
+// Combine takes two States objects and merges them, passed object will overwrite a state in current object
+func (s *States) Combine(cs *States) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	cs.m.Lock()
+	defer cs.m.Unlock()
+	for k, v := range cs.s {
+		s.s[k] = v
+	}
+}
+
+// Entities returns a string of the entities contained in the States object
 func (s *States) Entities() []string {
 	s.m.Lock()
 	defer s.m.Unlock()
@@ -67,6 +69,7 @@ func (s *States) Entities() []string {
 	return en
 }
 
+// Get returns a single state record and a bool if found
 func (s *States) Get(key string) (*State, bool) {
 	s.m.Lock()
 	defer s.m.Unlock()
@@ -78,13 +81,14 @@ func (s *States) Get(key string) (*State, bool) {
 	return st, true
 }
 
-func (s *States) Find(keys []string) map[string]*State {
+// Find returns a new map of states of the passed entities
+func (s *States) Find(entities []string) map[string]*State {
 	s.m.Lock()
 	defer s.m.Unlock()
 
 	ss := make(map[string]*State)
 
-	for _, k := range keys {
+	for _, k := range entities {
 		if st, ok := s.s[k]; ok {
 			ss[st.DomainEntity] = st
 		}
@@ -93,50 +97,8 @@ func (s *States) Find(keys []string) map[string]*State {
 	return ss
 }
 
-func (s *States) Slice() []*State {
-	s.m.Lock()
-	defer s.m.Unlock()
-
-	var ss []*State
-	for _, st := range s.s {
-		ss = append(ss, st)
-	}
-
-	return ss
-}
-
-func (s *States) Map() map[string]*State {
-	s.m.Lock()
-	defer s.m.Unlock()
-
-	sts := make(map[string]*State)
-
-	for k, v := range s.s {
-		sts[k] = v
-	}
-
-	return sts
-}
-
-func (s *States) SubSet(keys []string) States {
-	s.m.Lock()
-	defer s.m.Unlock()
-
-	sts := States{
-		s: make(map[string]*State),
-		m: &sync.Mutex{},
-	}
-
-	for _, k := range keys {
-		if st, ok := s.s[k]; ok {
-			sts.Upsert(st)
-		}
-	}
-
-	return sts
-}
-
-func (s *States) FindDomain(keys []string) map[string]*State {
+// FindDomainMap returns a map of the states for the passed domain
+func (s *States) FindDomainMap(keys []string) map[string]*State {
 	s.m.Lock()
 	defer s.m.Unlock()
 
@@ -151,6 +113,44 @@ func (s *States) FindDomain(keys []string) map[string]*State {
 	}
 
 	return ss
+}
+
+// Slice returns a slice of the states in no particular order
+func (s *States) Slice() []*State {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	var ss []*State
+	for _, st := range s.s {
+		ss = append(ss, st)
+	}
+
+	return ss
+}
+
+// Map returns a map of all the states
+func (s *States) Map() map[string]*State {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	sts := make(map[string]*State)
+
+	for k, v := range s.s {
+		sts[k] = v
+	}
+
+	return sts
+}
+
+// SubSet returns a new States which contains a subset of the current states based on entities passed
+func (s *States) SubSet(entities []string) States {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	return States{
+		s: s.Find(entities),
+		m: &sync.Mutex{},
+	}
 }
 
 func (gs *GoScript) GetState(domain, entityid string) *State {
@@ -168,7 +168,7 @@ func (gs *GoScript) GetStates(domainentity []string) *States {
 
 func (gs *GoScript) GetDomainStates(domainentity []string) *States {
 	rtn := States{
-		s: gs.states.FindDomain(domainentity),
+		s: gs.states.FindDomainMap(domainentity),
 		m: &sync.Mutex{},
 	}
 
