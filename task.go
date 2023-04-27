@@ -18,6 +18,7 @@ import (
 // properly kill the task externally.
 type Task struct {
 	Message     *model.Message
+	MqttMessage mqtt.Message
 	States      States
 	ServiceChan ServiceChan
 	// task context
@@ -33,24 +34,18 @@ type Task struct {
 }
 
 // TaskFunc is used to include a task object in MQTT command functions.
-type TaskFunc func(t *Task) func(message mqtt.Message, client mqtt.Client)
+type TaskFunc func(t *Task)
 
-// TaskWrapMQTT wraps a trigger and TaskFunc setting up and passing the
-func (gs *GoScript) TaskWrapMQTT(tr *Trigger, fn TaskFunc) func(message mqtt.Message, client mqtt.Client) {
+// TaskMQTT wraps a trigger and TaskFunc setting up and passing the task through
+func (gs *GoScript) TaskMQTT(tr *Trigger) func(message mqtt.Message, client mqtt.Client) {
 	// setup the trigger
 	tr = setupTrigger(tr)
 
-	// create the task
-	t := gs.newTask(tr, nil)
-
-	// update the task states
-	// TODO: see about moving this to newTask, it should just work there
-	for _, s := range tr.States {
-		t.States.Insert(gs.states.Insert(&State{
-			DomainEntity: s,
-		}))
+	return func(message mqtt.Message, client mqtt.Client) {
+		task := gs.newTask(tr, nil)
+		task.MqttMessage = message
+		gs.taskToRun.add(task)
 	}
-	return fn(t)
 }
 
 // Sleep waits for the timeout to occur and panics if the context is cancelled
