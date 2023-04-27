@@ -1,6 +1,7 @@
 package goscript
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -18,13 +19,16 @@ func TestEvaluate(t *testing.T) {
 			name: "on",
 			args: args{
 				states: States{
-					"sensor.test": &State{
-						DomainEntity: "sensor.test",
-						Domain:       "humidity",
-						Entity:       "test",
-						State:        "on",
-						Attributes:   nil,
+					s: map[string]*State{
+						"sensor.test": &State{
+							DomainEntity: "sensor.test",
+							Domain:       "humidity",
+							Entity:       "test",
+							State:        "on",
+							Attributes:   nil,
+						},
 					},
+					m: &sync.Mutex{},
 				},
 				eval: `state == "on"`,
 			},
@@ -34,13 +38,16 @@ func TestEvaluate(t *testing.T) {
 			name: "float",
 			args: args{
 				states: States{
-					"sensor.test": &State{
-						DomainEntity: "sensor.test",
-						Domain:       "humidity",
-						Entity:       "test",
-						State:        "31.1",
-						Attributes:   nil,
+					s: map[string]*State{
+						"sensor.test": &State{
+							DomainEntity: "sensor.test",
+							Domain:       "humidity",
+							Entity:       "test",
+							State:        "31.1",
+							Attributes:   nil,
+						},
 					},
+					m: &sync.Mutex{},
 				},
 				eval: "float(state) > 10.000000",
 			},
