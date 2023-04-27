@@ -27,6 +27,8 @@ type GoScript struct {
 	triggers      map[string][]*Trigger
 	domainTrigger map[string][]*Trigger
 
+	triggerRunning triggerRunning
+
 	devices map[string]*Device
 
 	areaRegistry map[string][]model.Result
@@ -71,6 +73,10 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	gs.taskToRun = taskMap{
 		tasks: make(map[uuid.UUID][]*Task),
 		m:     &sync.Mutex{},
+	}
+	gs.triggerRunning = triggerRunning{
+		m: make(map[uuid.UUID]*bool),
+		s: &sync.Mutex{},
 	}
 
 	gs.states = States{
@@ -151,9 +157,9 @@ func (gs *GoScript) runFunctions() {
 				if len(tasks) > 0 {
 					t := tasks[0]
 					if !*t.running {
-						go gs.runTask(tasks[0])
+						go gs.runTask(t)
+						gs.taskToRun.tasks[u] = tasks[1:]
 					}
-					gs.taskToRun.tasks[u] = tasks[1:]
 				}
 				if len(tasks) == 0 {
 					ran = append(ran, u)

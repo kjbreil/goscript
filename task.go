@@ -231,6 +231,7 @@ func (gs *GoScript) makeUniqueTask(tr *Trigger, task *Task) (*Task, bool) {
 
 	if tr.Unique.UUID != nil {
 		task.uuid = *tr.Unique.UUID
+		task.running = gs.triggerRunning.get(*tr.Unique.UUID)
 	} else {
 		task.uuid = tr.uuid
 	}

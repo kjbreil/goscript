@@ -47,7 +47,8 @@ type Trigger struct {
 // running it is important to only use the task methods within a trigger function instead of time.Sleep. If
 // Unique.KillMe is set to true the task will not be setup and will not run if another task is running of the same type.
 // Unique.UUID is used to link multiple triggers together. For example two triggers that control the same light and you
-// only want one of the trigger functions to run at a time.
+// only want one of the trigger functions to run at a time. Unique.Wait waits until the current task is finished before
+// running, will build up multiple tasks. The queue is based on the UUID so linking the UUID's will make one bit queue.
 type Unique struct {
 	KillMe bool
 	Wait   bool
