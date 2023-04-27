@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/kjbreil/hass-ws/model"
+	"strings"
 	"sync"
 )
 
@@ -144,13 +145,26 @@ func (s *States) Map() map[string]*State {
 
 // SubSet returns a new States which contains a subset of the current states based on entities passed
 func (s *States) SubSet(entities []string) States {
-	s.m.Lock()
-	defer s.m.Unlock()
-
 	return States{
 		s: s.Find(entities),
 		m: &sync.Mutex{},
 	}
+}
+
+// Where returns a new States object containing all the states that match the passed state. strings.Equalfold is used
+// for the comparison.
+func (s *States) Where(state string) *States {
+	sts := States{
+		s: make(map[string]*State),
+		m: &sync.Mutex{},
+	}
+
+	for _, v := range s.Slice() {
+		if strings.EqualFold(v.State, state) {
+			sts.Upsert(v)
+		}
+	}
+	return &sts
 }
 
 func (gs *GoScript) GetState(domain, entityid string) *State {
