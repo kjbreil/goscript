@@ -69,7 +69,7 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	gs.periodic = make(map[string][]*Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
 	gs.taskToRun = taskMap{
-		tasks: make(map[uuid.UUID]*Task),
+		tasks: make(map[uuid.UUID][]*Task),
 		m:     &sync.Mutex{},
 	}
 
@@ -147,9 +147,17 @@ func (gs *GoScript) runFunctions() {
 		case <-timer.C:
 			var ran []uuid.UUID
 			gs.taskToRun.m.Lock()
-			for u, t := range gs.taskToRun.tasks {
-				go gs.runTask(t)
-				ran = append(ran, u)
+			for u, tasks := range gs.taskToRun.tasks {
+				if len(tasks) > 0 {
+					t := tasks[0]
+					if !*t.running {
+						go gs.runTask(tasks[0])
+					}
+					gs.taskToRun.tasks[u] = tasks[1:]
+				}
+				if len(tasks) == 0 {
+					ran = append(ran, u)
+				}
 			}
 			for _, u := range ran {
 				delete(gs.taskToRun.tasks, u)

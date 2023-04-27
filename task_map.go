@@ -6,7 +6,7 @@ import (
 )
 
 type taskMap struct {
-	tasks map[uuid.UUID]*Task
+	tasks map[uuid.UUID][]*Task
 	m     *sync.Mutex
 }
 
@@ -16,7 +16,7 @@ func (tr *taskMap) add(t *Task) {
 	}
 	tr.m.Lock()
 	defer tr.m.Unlock()
-	tr.tasks[t.uuid] = t
+	tr.tasks[t.uuid] = append(tr.tasks[t.uuid], t)
 }
 
 func (tr *taskMap) delete(t *Task) {

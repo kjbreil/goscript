@@ -94,7 +94,6 @@ func (t *Task) WaitUntil(entityID string, eval []string, timeout time.Duration) 
 	} else {
 		select {
 		case <-t.waitDone:
-			//t.States = t.gs.GetStates(t.states)
 			return true
 		case <-t.ctx.Done():
 			panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
@@ -114,7 +113,6 @@ func (t *Task) While(entityID string, eval []string, whileFunc WhileFunc) {
 		if t.ctx.Err() != nil {
 			panic(fmt.Sprintf("task context cancelled for %s", t.uuid))
 		}
-		//t.States = t.gs.GetStates(t.states)
 		if eState, ok := t.States.Get(entityID); ok {
 			if Evaluates(States{
 				s: map[string]*State{entityID: eState},
@@ -197,31 +195,44 @@ func (gs *GoScript) newTask(tr *Trigger, message *model.Message) *Task {
 	task.States.Combine(domainStates)
 
 	if tr.Unique != nil {
-
-		// KillMe checks if the task is running and exits rather than kill off the other task
-		if tr.Unique.KillMe {
-			if *tr.Unique.running {
-				gs.logger.Info(fmt.Sprintf("task %s tried to start but other task running and KillMe is true", tr.uuid))
-				return nil
-			}
-		}
-
-		tr.Unique.cancel()
-		tr.Unique.ctx, tr.Unique.cancel = context.WithCancel(context.Background())
-		task.ctx, task.cancel = tr.Unique.ctx, tr.Unique.cancel
-
-		task.running = tr.Unique.running
-
-		if tr.Unique.UUID != nil {
-			task.uuid = *tr.Unique.UUID
-		} else {
-			task.uuid = tr.uuid
+		t, done := gs.makeUniqueTask(tr, task)
+		if done {
+			return t
 		}
 	} else {
 		task.running = new(bool)
-		task.ctx, task.cancel = context.WithCancel(context.Background())
+		task.ctx, task.cancel = context.WithCancel(gs.ctx)
 		task.uuid = uuid.New()
 	}
 
 	return task
+}
+
+func (gs *GoScript) makeUniqueTask(tr *Trigger, task *Task) (*Task, bool) {
+	// KillMe checks if the task is running and exits rather than kill off the other task
+	if tr.Unique.KillMe {
+		if *tr.Unique.running {
+			gs.logger.Info(fmt.Sprintf("task %s tried to start but other task running and KillMe is true", tr.uuid))
+			return nil, true
+		}
+	}
+
+	// non wait tasks (default) cancel the current context
+	if !tr.Unique.Wait {
+		tr.Unique.cancel()
+		tr.Unique.ctx, tr.Unique.cancel = context.WithCancel(context.Background())
+		task.ctx, task.cancel = tr.Unique.ctx, tr.Unique.cancel
+	} else {
+		task.ctx, task.cancel = context.WithCancel(tr.Unique.ctx)
+		task.uuid = uuid.New()
+	}
+
+	task.running = tr.Unique.running
+
+	if tr.Unique.UUID != nil {
+		task.uuid = *tr.Unique.UUID
+	} else {
+		task.uuid = tr.uuid
+	}
+	return nil, false
 }

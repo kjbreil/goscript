@@ -50,6 +50,7 @@ type Trigger struct {
 // only want one of the trigger functions to run at a time.
 type Unique struct {
 	KillMe bool
+	Wait   bool
 	UUID   *uuid.UUID
 
 	running *bool
