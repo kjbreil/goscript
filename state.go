@@ -168,7 +168,7 @@ func (s *States) Where(state string) *States {
 }
 
 func (gs *GoScript) GetState(domain, entityid string) *State {
-	s, _ := gs.states.Get(fmt.Sprintf("%s%s", domain, entityid))
+	s, _ := gs.states.Get(fmt.Sprintf("%s.%s", domain, entityid))
 	return s
 }
 
