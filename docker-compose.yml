@@ -1,0 +1,28 @@
+version: '3'
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - $PWD/docker/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    ports:
+      - '8123:8123'
+    networks:
+      - homeassistant
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto:latest
+    restart: unless-stopped
+    volumes:
+      - $PWD/docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - $PWD/docker/mosquitto/log:/mosquitto/log
+      - $PWD/docker/mosquitto/data:/mosquitto/data
+    ports:
+      - '1883:1883'
+      - '9001:9001'
+    networks:
+      - homeassistant
+networks:
+  homeassistant:
