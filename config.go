@@ -33,19 +33,30 @@ func (c *Config) GetModule(key string) (interface{}, error) {
 }
 
 func ParseConfig(filename string, modules Modules) (*Config, error) {
-	var configMap map[string]interface{}
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	var c Config
 
-	err = yaml.Unmarshal(data, &configMap)
+	c, err := ParseConfigData(data, modules)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+var DecodeHookFuncs []mapstructure.DecodeHookFunc
+
+func ParseConfigData(data []byte, modules Modules) (*Config, error) {
+
+	var configMap map[string]interface{}
+	err := yaml.Unmarshal(data, &configMap)
 	if err != nil {
 		return nil, err
 	}
 
+	var c Config
 	c.Modules = make(map[string]interface{})
 
 	var decoder *mapstructure.Decoder
@@ -86,6 +97,8 @@ func (c *Config) decodeModules(modules Modules, configMap map[string]interface{}
 }
 
 func configDecoder(results interface{}) (*mapstructure.Decoder, error) {
+	DecodeHookFuncs = append(DecodeHookFuncs, stringToTimeHookFunc())
+
 	return mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result: results,
 		MatchName: func(mapKey, fieldName string) bool {
@@ -100,7 +113,7 @@ func configDecoder(results interface{}) (*mapstructure.Decoder, error) {
 		},
 		WeaklyTypedInput: true,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			stringToTimeHookFunc(),
+			DecodeHookFuncs...,
 		),
 	})
 }
