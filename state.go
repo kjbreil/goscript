@@ -1,11 +1,11 @@
 package goscript
 
 import (
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/kjbreil/hass-ws/model"
 	"strings"
 	"sync"
+	"time"
 )
 
 type States struct {
@@ -16,8 +16,26 @@ type State struct {
 	DomainEntity string
 	Domain       string
 	Entity       string
-	State        string
+	State        StateText
 	Attributes   map[string]interface{}
+	LastChanged  time.Time
+	LastUpdated  time.Time
+}
+
+func StateFromWS(s *model.State) *State {
+	if s.State == nil || s.EntityId == nil {
+		return nil
+	}
+
+	return &State{
+		DomainEntity: *s.EntityId,
+		Domain:       s.Domain(),
+		Entity:       s.Entity(),
+		State:        StateText(*s.State),
+		LastChanged:  *s.LastChanged,
+		LastUpdated:  *s.LastUpdated,
+		Attributes:   s.Attributes,
+	}
 }
 
 // Insert only adds to the map if something does not exist already. Returns what is in the map whether added or not
@@ -160,15 +178,15 @@ func (s *States) Where(state string) *States {
 	}
 
 	for _, v := range s.Slice() {
-		if strings.EqualFold(v.State, state) {
+		if strings.EqualFold(string(v.State), state) {
 			sts.Upsert(v)
 		}
 	}
 	return &sts
 }
 
-func (gs *GoScript) GetState(domain, entityid string) *State {
-	s, _ := gs.states.Get(fmt.Sprintf("%s.%s", domain, entityid))
+func (gs *GoScript) GetState(entityId string) *State {
+	s, _ := gs.states.Get(entityId)
 	return s
 }
 
@@ -198,7 +216,7 @@ func (gs *GoScript) handleMessage(message model.Message) {
 				DomainEntity: message.DomainEntity(),
 				Domain:       message.Domain(),
 				Entity:       message.EntityID(),
-				State:        message.State(),
+				State:        StateText(message.State()),
 				Attributes:   message.Attributes(),
 			}
 
@@ -217,7 +235,7 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 			DomainEntity: sr.DomainEntity(),
 			Domain:       sr.Domain(),
 			Entity:       sr.EntityID(),
-			State:        sr.State(),
+			State:        StateText(sr.State()),
 			Attributes:   sr.Attributes,
 		}
 
@@ -259,7 +277,7 @@ func MessageState(message *model.Message) *State {
 		DomainEntity: message.DomainEntity(),
 		Domain:       message.Domain(),
 		Entity:       message.EntityID(),
-		State:        message.State(),
+		State:        StateText(message.State()),
 		Attributes:   message.Attributes(),
 	}
 }

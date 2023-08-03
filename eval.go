@@ -47,7 +47,7 @@ func Evaluate(states States, eval string) bool {
 
 	if len(states.s) == 1 {
 		for _, state := range states.s {
-			env["state"] = state.State
+			env["state"] = string(state.State)
 			// add attributes to env
 			if attr := state.Attributes; attr != nil {
 				for k, v := range attr {
@@ -64,7 +64,7 @@ func Evaluate(states States, eval string) bool {
 	}
 
 	for _, state := range states.s {
-		env[state.DomainEntity] = state.State
+		env[state.DomainEntity] = string(state.State)
 		if attr := state.Attributes; attr != nil {
 			for k, v := range attr {
 				for _, c := range program.Constants {
