@@ -21,12 +21,15 @@ func (gs *GoScript) runPeriodic() {
 	// run zero length immediate periodics and delete from periodic list
 	for _, triggers := range gs.periodic {
 		for _, t := range triggers {
-			for i := range t.Periodic {
+			pLen := len(t.Periodic)
+			for i := 0; i < pLen; i++ {
 				if len(t.Periodic[i]) == 0 {
 					task := gs.newTask(t, nil)
 					gs.taskToRun.add(task)
 
 					t.Periodic = append(t.Periodic[:i], t.Periodic[i+1:]...)
+					i--
+					pLen--
 				}
 			}
 		}

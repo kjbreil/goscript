@@ -3,8 +3,9 @@ module github.com/kjbreil/goscript
 go 1.19
 
 require (
-	github.com/adhocore/gronx v1.5.0
+	github.com/adhocore/gronx v1.6.2
 	github.com/antonmedv/expr v1.12.5
+	github.com/eclipse/paho.mqtt.golang v1.4.2
 	github.com/go-logr/logr v1.2.4
 	github.com/goccy/go-yaml v1.11.0
 	github.com/google/uuid v1.3.0
@@ -15,7 +16,6 @@ require (
 )
 
 require (
-	github.com/eclipse/paho.mqtt.golang v1.4.2 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/go-playground/validator/v10 v10.10.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
@@ -30,4 +30,6 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
+replace github.com/kjbreil/hass-ws => /Users/kjell/dev/hass-ws
 
+replace github.com/kjbreil/hass-mqtt => /Users/kjell/dev/hass-mqtt

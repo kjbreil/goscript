@@ -36,18 +36,6 @@ type Task struct {
 // TaskFunc is used to include a task object in MQTT command functions.
 type TaskFunc func(t *Task)
 
-// TaskMQTT wraps a trigger and TaskFunc setting up and passing the task through
-func (gs *GoScript) TaskMQTT(tr *Trigger) func(message mqtt.Message, client mqtt.Client) {
-	// setup the trigger
-	tr = setupTrigger(tr)
-
-	return func(message mqtt.Message, client mqtt.Client) {
-		task := gs.newTask(tr, nil)
-		task.MqttMessage = message
-		gs.taskToRun.add(task)
-	}
-}
-
 // Sleep waits for the timeout to occur and panics if the context is cancelled
 // The panic is caught by a recover
 func (t *Task) Sleep(timeout time.Duration) {
@@ -229,6 +217,7 @@ func (gs *GoScript) makeUniqueTask(tr *Trigger, task *Task) (*Task, bool) {
 
 	task.running = tr.Unique.running
 
+	// TODO: This needs to be moved up, right now Unique.UUID only working for Wait = true
 	if tr.Unique.UUID != nil {
 		task.uuid = *tr.Unique.UUID
 		task.running = gs.triggerRunning.get(*tr.Unique.UUID)

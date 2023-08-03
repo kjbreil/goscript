@@ -1,5 +1,5 @@
-github.com/adhocore/gronx v1.5.0 h1:GJT3OjkTf3dWIIuS+Owp5RxvSt3vYwm9IuDQTevlniA=
-github.com/adhocore/gronx v1.5.0/go.mod h1:7oUY1WAU8rEJWmAxXR2DN0JaO4gi9khSgKjiRypqteg=
+github.com/adhocore/gronx v1.6.2 h1:/Pg6cuHFJmUGRIYWhRFjb6iL9fdzNmoMPj+/r6L01KU=
+github.com/adhocore/gronx v1.6.2/go.mod h1:7oUY1WAU8rEJWmAxXR2DN0JaO4gi9khSgKjiRypqteg=
 github.com/antonmedv/expr v1.12.5 h1:Fq4okale9swwL3OeLLs9WD9H6GbgBLJyN/NUHRv+n0E=
 github.com/antonmedv/expr v1.12.5/go.mod h1:FPC8iWArxls7axbVLsW+kpg1mz29A1b2M6jt+hZfDkU=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
