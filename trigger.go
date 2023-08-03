@@ -33,7 +33,7 @@ type Trigger struct {
 	uuid uuid.UUID
 
 	Unique        *Unique
-	Triggers      []string
+	Triggers      EntityTriggers
 	DomainTrigger []string // DomainTrigger, triggers of everything in the domain, also attaches all States for the domain
 	Periodic
 	States       []string
@@ -194,4 +194,14 @@ func (gs *GoScript) triggerDomain(message *model.Message, trigger *Trigger) {
 		task := gs.newTask(trigger, message)
 		gs.taskToRun.add(task)
 	}
+}
+
+type EntityTriggers []string
+
+func MakeEntityTriggers(triggers ...[]string) EntityTriggers {
+	var et EntityTriggers
+	for _, t := range triggers {
+		et = append(et, t...)
+	}
+	return et
 }
