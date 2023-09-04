@@ -35,6 +35,7 @@ func Evaluate(states States, eval string) bool {
 	program, err := expr.Compile(eval, expr.Env(map[string]interface{}{}),
 		expr.AllowUndefinedVariables(),
 		expr.AsBool(),
+		expr.DisableBuiltin("float"),
 		atoi)
 	if err != nil {
 		return false
