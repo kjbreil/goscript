@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/antonmedv/expr"
 	"github.com/kjbreil/hass-ws/model"
-	"strconv"
 	"sync"
 )
 
@@ -25,18 +24,10 @@ func Evaluates(states States, eval []string) bool {
 func Evaluate(states States, eval string) bool {
 	var passed bool
 
-	atoi := expr.Function(
-		"float",
-		func(params ...any) (any, error) {
-			return strconv.ParseFloat(params[0].(string), 64)
-		},
-	)
-
 	program, err := expr.Compile(eval, expr.Env(map[string]interface{}{}),
 		expr.AllowUndefinedVariables(),
 		expr.AsBool(),
-		expr.DisableBuiltin("float"),
-		atoi)
+	)
 	if err != nil {
 		return false
 	}

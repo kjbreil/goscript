@@ -41,7 +41,7 @@ func TestEvaluate(t *testing.T) {
 					s: map[string]*State{
 						"sensor.test": &State{
 							DomainEntity: "sensor.test",
-							Domain:       "humidity",
+							Domain:       "sensor",
 							Entity:       "test",
 							State:        "31.1",
 							Attributes:   nil,
@@ -52,6 +52,44 @@ func TestEvaluate(t *testing.T) {
 				eval: "float(state) > 10.000000",
 			},
 			want: true,
+		},
+		{
+			name: "int",
+			args: args{
+				states: States{
+					s: map[string]*State{
+						"sensor.test": &State{
+							DomainEntity: "sensor.test",
+							Domain:       "sensor",
+							Entity:       "test",
+							State:        "1",
+							Attributes:   nil,
+						},
+					},
+					m: &sync.Mutex{},
+				},
+				eval: "int(state) > 0",
+			},
+			want: true,
+		},
+		{
+			name: "int is 1 want 0",
+			args: args{
+				states: States{
+					s: map[string]*State{
+						"sensor.test": &State{
+							DomainEntity: "sensor.test",
+							Domain:       "sensor",
+							Entity:       "test",
+							State:        "1",
+							Attributes:   nil,
+						},
+					},
+					m: &sync.Mutex{},
+				},
+				eval: "int(state) = 0",
+			},
+			want: false,
 		},
 	}
 	for _, tt := range tests {
