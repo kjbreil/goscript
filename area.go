@@ -2,6 +2,8 @@ package goscript
 
 import "github.com/kjbreil/hass-ws/model"
 
+// GetAreaDomain returns a list of all entities in the specified area and domain.
+
 func (gs *GoScript) GetAreaDomain(area, domain string) []string {
 	var results []string
 
