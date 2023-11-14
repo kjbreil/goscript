@@ -25,6 +25,11 @@ func Test_timeToCron(t *testing.T) {
 			args: args{t: time.Date(0, 0, 0, 6, 0, 0, 0, time.UTC)},
 			want: "0 6 * * *",
 		},
+		{
+			name: "4:30am",
+			args: args{t: time.Date(0, 0, 0, 4, 30, 0, 0, time.Local)},
+			want: "30 4 * * *",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -108,12 +113,12 @@ func TestLastValidCron(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test 1",
+			name: "last valid on previous day",
 			args: args{
-				crons: []string{"0 1 * * *", "0 12 * * *"},
-				t:     time.Date(2023, 1, 1, 13, 0, 0, 0, time.Local),
+				crons: []string{"0 2 * * *", "0 3 * * *"},
+				t:     time.Date(2023, 1, 1, 1, 0, 0, 0, time.Local),
 			},
-			want:    "0 12 * * *",
+			want:    "0 3 * * *",
 			wantErr: false,
 		},
 		{
@@ -126,7 +131,7 @@ func TestLastValidCron(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test 1",
+			name: "last valid is minutes before",
 			args: args{
 				crons: []string{"25 1 * * *", "0 1 * * *", "30 1 * * *"},
 				t:     time.Date(2023, 1, 1, 1, 27, 0, 0, time.Local),
@@ -135,7 +140,7 @@ func TestLastValidCron(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test 1",
+			name: "just before next valid",
 			args: args{
 				crons: []string{"0 1 * * *", "30 1 * * *", "25 1 * * *"},
 				t:     time.Date(2023, 1, 1, 1, 27, 0, 0, time.Local),
@@ -144,7 +149,7 @@ func TestLastValidCron(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test 1",
+			name: "just before next valid 2",
 			args: args{
 				crons: []string{"* 1 * * *", "18 11 * * *", "* 16 * * *"},
 				t:     time.Date(2023, 1, 1, 11, 16, 0, 0, time.Local),
@@ -203,6 +208,15 @@ func TestNextValidCron(t *testing.T) {
 				t:     time.Date(2023, 1, 1, 11, 30, 0, 0, time.Local),
 			},
 			want:    "35 11 * * *",
+			wantErr: false,
+		},
+		{
+			name: "next valid on next day",
+			args: args{
+				crons: []string{"0 2 * * *", "0 3 * * *"},
+				t:     time.Date(2023, 1, 1, 4, 0, 0, 0, time.Local),
+			},
+			want:    "0 2 * * *",
 			wantErr: false,
 		},
 	}
@@ -341,6 +355,127 @@ func TestNextTime(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NextTime() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCronToTime(t *testing.T) {
+	type args struct {
+		cron string
+		t    time.Time
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    time.Time
+		wantErr bool
+	}{
+		{
+			name: "01:00AM",
+			args: args{
+				cron: "0 1 * * *",
+				t:    time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
+			},
+			want:    time.Date(2023, 1, 1, 1, 0, 0, 0, time.Local),
+			wantErr: false,
+		},
+		{
+			name: "04:30AM",
+			args: args{
+				cron: "30 4 * * *",
+				t:    time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
+			},
+			want:    time.Date(2023, 1, 1, 4, 30, 0, 0, time.Local),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CronToTime(tt.args.cron, tt.args.t)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CronToTime() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CronToTime() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMustCronToTime(t *testing.T) {
+	type args struct {
+		cron string
+		t    time.Time
+	}
+	tests := []struct {
+		name string
+		args args
+		want time.Time
+	}{
+		{
+			name: "01:00AM",
+			args: args{
+				cron: "0 1 * * *",
+				t:    time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
+			},
+			want: time.Date(2023, 1, 1, 1, 0, 0, 0, time.Local),
+		},
+		{
+			name: "04:30AM",
+			args: args{
+				cron: "30 4 * * *",
+				t:    time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
+			},
+			want: time.Date(2023, 1, 1, 4, 30, 0, 0, time.Local),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := MustCronToTime(tt.args.cron, tt.args.t); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MustCronToTime() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCronToSegments(t *testing.T) {
+	type args struct {
+		cron string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    [6]int
+		wantErr bool
+	}{
+		{
+			name: "01:00AM",
+			args: args{
+				cron: "0 1 * * *",
+			},
+			want:    [6]int{0, 0, 1, -1, -1, -1},
+			wantErr: false,
+		},
+		{
+			name: "04:30AM",
+			args: args{
+				cron: "30 4 * * *",
+			},
+			want:    [6]int{0, 30, 4, -1, -1, -1},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CronToSegments(tt.args.cron)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CronToSegments() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CronToSegments() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

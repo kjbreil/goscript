@@ -55,6 +55,7 @@ func CronToSegments(cron string) ([6]int, error) {
 	return segs, nil
 }
 
+// LastValidCron returns the last valid cron for the given crons and time
 func LastValidCron(crons []string, t time.Time) (string, error) {
 	crons = SortCronJobs(crons)
 
@@ -77,9 +78,6 @@ func LastValidCron(crons []string, t time.Time) (string, error) {
 				lastHour = cronTime.Hour()
 				lastMin = cronTime.Minute()
 			} else if cronTime.Minute() <= t.Minute() && t.Minute() >= lastMin {
-				if t.Hour() != lastHour {
-					lastMin = -1
-				}
 				lastExp = exp
 				lastHour = cronTime.Hour()
 				lastMin = cronTime.Minute()
