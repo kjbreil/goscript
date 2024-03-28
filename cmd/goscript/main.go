@@ -25,16 +25,26 @@ func main() {
 
 	gs.AddTrigger(&goscript.Trigger{
 		Unique: &goscript.Unique{KillMe: false},
-		//Triggers:      []string{"input_button.test_button"},
-		//DomainTrigger: []string{"input_button"},
-		//Periodic: goscript.Periodics(""),
-		Periodic: goscript.Periodics("*/3 * * * * *"),
-		States:   goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
-		Eval:     nil,
+		// Triggers:      []string{"input_button.test_button"},
+		// DomainTrigger: []string{"input_button"},
+		// Periodic: goscript.Periodics(""),
+		// Periodic: goscript.Periodics("*/3 * * * * *"),
+		Periodic: goscript.Periodics("0 */10 * * * *", ""),
+
+		States: goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
+		Eval:   nil,
 		Func: func(t *goscript.Task) {
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
 			time.Sleep(10 * time.Second)
-			//gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
+			// gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
+		},
+	})
+
+	gs.AddTrigger(&goscript.Trigger{
+		Services: []string{"cover.kids_room_shades"},
+		Eval:     goscript.Eval(`state == "on"`),
+		Func: func(t *goscript.Task) {
+			fmt.Println("here")
 		},
 	})
 

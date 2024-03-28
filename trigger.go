@@ -35,6 +35,7 @@ type Trigger struct {
 	Unique        *Unique
 	Triggers      EntityTriggers
 	DomainTrigger []string // DomainTrigger, triggers of everything in the domain, also attaches all States for the domain
+	Services      []string // Services to trigger on. Eval is ignored for services.
 	Periodic
 	States       []string
 	DomainStates []string
@@ -62,6 +63,9 @@ type Unique struct {
 // TriggerFunc is the function to run when the criteria are met. Within the trigger function a *Task is available.
 // See Task for more information on what is available in Task.
 type TriggerFunc func(t *Task)
+
+// NextTime returns the next time the trigger should fire, or nil if the trigger should never fire again.
+// The time argument is the current time, and is used to calculate the next fire time based on the trigger's periodic schedule.
 
 func (t *Trigger) NextTime(tt time.Time) (*time.Time, error) {
 	if len(t.Periodic) == 0 {
@@ -100,6 +104,10 @@ func (gs *GoScript) AddTrigger(tr *Trigger) {
 	// cron time is an array of triggers so multiple triggers can have same cron schedule
 	for _, ep := range tr.Periodic {
 		gs.periodic[ep] = append(gs.periodic[ep], tr)
+	}
+
+	for _, es := range tr.Services {
+		gs.serviceTriggers[es] = append(gs.serviceTriggers[es], tr)
 	}
 }
 
@@ -204,4 +212,22 @@ func MakeEntityTriggers(triggers ...[]string) EntityTriggers {
 		et = append(et, t...)
 	}
 	return et
+}
+
+func (gs *GoScript) runServiceTriggers(message model.Message) {
+	if message.Event != nil && message.Event.Data != nil && message.Event.Data.ServiceData != nil {
+		for _, entity := range message.Event.Data.ServiceData.EntityId {
+			if tr, ok := gs.serviceTriggers[entity]; ok {
+				for _, trigger := range tr {
+					gs.triggerService(&message, trigger)
+				}
+			}
+		}
+	}
+
+}
+
+func (gs *GoScript) triggerService(message *model.Message, trigger *Trigger) {
+	task := gs.newTask(trigger, message)
+	gs.taskToRun.add(task)
 }

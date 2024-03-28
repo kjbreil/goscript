@@ -1,6 +1,7 @@
 package goscript
 
 import (
+	"fmt"
 	"github.com/adhocore/gronx"
 	"time"
 )
@@ -17,6 +18,7 @@ func Periodics(times ...string) []string {
 }
 
 func (gs *GoScript) runPeriodic() {
+	var err error
 	// TODO: Validate Periodic slice
 	// run zero length immediate periodics and delete from periodic list
 	for _, triggers := range gs.periodic {
@@ -37,7 +39,12 @@ func (gs *GoScript) runPeriodic() {
 	delete(gs.periodic, "")
 
 	// setup the next fire time for all triggers
-	gs.fillNextTime()
+	gs.nextPeriodic, err = fillNextTime(gs.periodic)
+	if err != nil {
+		gs.Logger().Error(err, "NextTime")
+	}
+
+	//
 
 	ticker := time.NewTicker(time.Second)
 	for {
@@ -105,17 +112,18 @@ func (gs *GoScript) runGronJob(gron *gronx.Gronx, start bool) {
 	}
 }
 
-func (gs *GoScript) fillNextTime() {
-	gs.nextPeriodic = time.Now().Add(60 * time.Minute)
-	for _, triggers := range gs.periodic {
+func fillNextTime(periodics map[string][]*Trigger) (time.Time, error) {
+	next := time.Now().Add(60 * time.Minute)
+	for _, triggers := range periodics {
 		for _, t := range triggers {
 			nt, err := t.NextTime(time.Now())
 			if err != nil {
-				gs.Logger().Error(err, "setting next time failed")
+				return next, fmt.Errorf("failed to get NextTime for task %s: %w", t.uuid, err)
 			}
-			if nt != nil && nt.Before(gs.nextPeriodic) {
-				gs.nextPeriodic = *nt
+			if nt != nil && nt.Before(next) {
+				next = *nt
 			}
 		}
 	}
+	return next, nil
 }

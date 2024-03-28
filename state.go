@@ -223,6 +223,9 @@ func (gs *GoScript) handleMessage(message model.Message) {
 			gs.states.Upsert(s)
 
 			gs.runTriggers(message)
+		case model.EventTypeCallService:
+
+			gs.runServiceTriggers(message)
 		}
 	}
 }

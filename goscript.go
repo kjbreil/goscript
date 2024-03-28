@@ -22,10 +22,11 @@ type GoScript struct {
 	ws     *hassws.Client
 
 	// maps holding state based triggers
-	periodic      map[string][]*Trigger
-	nextPeriodic  time.Time
-	triggers      map[string][]*Trigger
-	domainTrigger map[string][]*Trigger
+	periodic        map[string][]*Trigger
+	nextPeriodic    time.Time
+	triggers        map[string][]*Trigger
+	domainTrigger   map[string][]*Trigger
+	serviceTriggers map[string][]*Trigger
 
 	triggerRunning triggerRunning
 
@@ -69,6 +70,7 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	gs.triggers = make(map[string][]*Trigger)
 	gs.domainTrigger = make(map[string][]*Trigger)
 	gs.periodic = make(map[string][]*Trigger)
+	gs.serviceTriggers = make(map[string][]*Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
 	gs.taskToRun = taskMap{
 		tasks: make(map[uuid.UUID][]*Task),
