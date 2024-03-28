@@ -1,6 +1,8 @@
-package goscript
+package core
 
 import (
+	"github.com/kjbreil/goscript/pkg/periodic"
+	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/kjbreil/hass-ws/services"
 	"sync"
 	"testing"
@@ -12,13 +14,13 @@ func TestTrigger(t *testing.T) {
 	wg := &sync.WaitGroup{}
 
 	fns = append(fns, func(gs *GoScript) error {
-		var triggers []*Trigger
+		var triggers []*trigger.Trigger
 
 		// testing periodic start right away
-		triggers = append(triggers, &Trigger{
-			Periodic: Periodics(""),
-			States:   Entities("switch.test_switch"),
-			Func: func(task *Task) {
+		triggers = append(triggers, &trigger.Trigger{
+			Periodic: periodic.Periodics(""),
+			States:   trigger.Entities("switch.test_switch"),
+			Func: func(task *trigger.Task) {
 				gs.ServiceChan <- services.NewSwitchTurnOn(services.Targets("switch.test_switch"))
 				task.Sleep(1 * time.Second)
 				if s, ok := task.States.Get("switch.test_switch"); ok {
@@ -44,9 +46,9 @@ func TestTrigger(t *testing.T) {
 		})
 
 		// test triggering
-		triggers = append(triggers, &Trigger{
-			Triggers: Entities("switch.test_switch"),
-			Func: func(task *Task) {
+		triggers = append(triggers, &trigger.Trigger{
+			Triggers: trigger.Entities("switch.test_switch"),
+			Func: func(task *trigger.Task) {
 				if task.Message.State() == "on" {
 					wg.Done()
 				}
@@ -56,10 +58,10 @@ func TestTrigger(t *testing.T) {
 		// test default unique behavior
 		defaultUniqueRuns := 0
 		defaultUniqueWG := false
-		triggers = append(triggers, &Trigger{
-			Triggers: Entities("switch.test_switch"),
-			Unique:   &Unique{},
-			Func: func(task *Task) {
+		triggers = append(triggers, &trigger.Trigger{
+			Triggers: trigger.Entities("switch.test_switch"),
+			Unique:   &trigger.Unique{},
+			Func: func(task *trigger.Task) {
 				defaultUniqueRuns++
 				task.Sleep(4 * time.Second)
 				if defaultUniqueRuns < 2 {
@@ -76,11 +78,11 @@ func TestTrigger(t *testing.T) {
 		// test unique wait
 		waitUniqueStarts := 0
 		waitUniqueEnds := 0
-		triggers = append(triggers, &Trigger{
-			//Triggers: Entities("switch.test_switch"),
-			Periodic: Periodics("*/1 * * * * *"),
-			Unique:   &Unique{Wait: true},
-			Func: func(task *Task) {
+		triggers = append(triggers, &trigger.Trigger{
+			// Triggers: Entities("switch.test_switch"),
+			Periodic: periodic.Periodics("*/1 * * * * *"),
+			Unique:   &trigger.Unique{Wait: true},
+			Func: func(task *trigger.Task) {
 				if waitUniqueEnds > 5 {
 					return
 				}
@@ -102,11 +104,11 @@ func TestTrigger(t *testing.T) {
 		// test unique killme
 		killMeStarts := 0
 		var killMeStartTime time.Time
-		triggers = append(triggers, &Trigger{
-			//Triggers: Entities("switch.test_switch"),
-			Periodic: Periodics("*/1 * * * * *"),
-			Unique:   &Unique{Wait: true},
-			Func: func(task *Task) {
+		triggers = append(triggers, &trigger.Trigger{
+			// Triggers: Entities("switch.test_switch"),
+			Periodic: periodic.Periodics("*/1 * * * * *"),
+			Unique:   &trigger.Unique{Wait: true},
+			Func: func(task *trigger.Task) {
 
 				if time.Now().Sub(killMeStartTime) < time.Second*5 {
 					t.Fatalf("kill me did not work")

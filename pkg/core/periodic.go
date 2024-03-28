@@ -1,21 +1,11 @@
-package goscript
+package core
 
 import (
 	"fmt"
 	"github.com/adhocore/gronx"
+	"github.com/kjbreil/goscript/pkg/trigger"
 	"time"
 )
-
-// Periodic is the list of cron expressions to run periodically
-type Periodic []string
-
-// Periodics is a helper function to add multiple strings without needing a []string{}
-func Periodics(times ...string) []string {
-	rtn := make([]string, len(times))
-	//TODO: Validate the cron strings
-	copy(rtn, times)
-	return rtn
-}
 
 func (gs *GoScript) runPeriodic() {
 	var err error
@@ -27,7 +17,7 @@ func (gs *GoScript) runPeriodic() {
 			for i := 0; i < pLen; i++ {
 				if len(t.Periodic[i]) == 0 {
 					task := gs.newTask(t, nil)
-					gs.taskToRun.add(task)
+					gs.taskToRun.Add(task)
 
 					t.Periodic = append(t.Periodic[:i], t.Periodic[i+1:]...)
 					i--
@@ -63,7 +53,7 @@ func (gs *GoScript) shouldRunTrigger() {
 	gs.nextPeriodic = time.Now().Add(60 * time.Minute)
 	for _, triggers := range gs.periodic {
 		for _, t := range triggers {
-			if t.nextTime == nil {
+			if t.GetNextTime() == nil {
 				gs.Logger().Info("next time not set")
 				_, err := t.NextTime(time.Now())
 				if err != nil {
@@ -71,9 +61,9 @@ func (gs *GoScript) shouldRunTrigger() {
 					continue
 				}
 			}
-			if time.Now().After(*t.nextTime) {
+			if time.Now().After(*t.GetNextTime()) {
 				task := gs.newTask(t, nil)
-				gs.taskToRun.add(task)
+				gs.taskToRun.Add(task)
 
 				_, err := t.NextTime(time.Now())
 				if err != nil {
@@ -81,8 +71,8 @@ func (gs *GoScript) shouldRunTrigger() {
 					continue
 				}
 			}
-			if t.nextTime.Before(gs.nextPeriodic) {
-				gs.nextPeriodic = *t.nextTime
+			if t.GetNextTime().Before(gs.nextPeriodic) {
+				gs.nextPeriodic = *t.GetNextTime()
 			}
 		}
 	}
@@ -106,19 +96,19 @@ func (gs *GoScript) runGronJob(gron *gronx.Gronx, start bool) {
 		for _, t := range triggers {
 			if due {
 				task := gs.newTask(t, nil)
-				gs.taskToRun.add(task)
+				gs.taskToRun.Add(task)
 			}
 		}
 	}
 }
 
-func fillNextTime(periodics map[string][]*Trigger) (time.Time, error) {
+func fillNextTime(periodics map[string][]*trigger.Trigger) (time.Time, error) {
 	next := time.Now().Add(60 * time.Minute)
 	for _, triggers := range periodics {
 		for _, t := range triggers {
 			nt, err := t.NextTime(time.Now())
 			if err != nil {
-				return next, fmt.Errorf("failed to get NextTime for task %s: %w", t.uuid, err)
+				return next, fmt.Errorf("failed to get NextTime for task %s: %w", t.UUID(), err)
 			}
 			if nt != nil && nt.Before(next) {
 				next = *nt

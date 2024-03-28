@@ -1,9 +1,12 @@
-package goscript
+package trigger
 
 import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/kjbreil/goscript/helpers"
+	"github.com/kjbreil/goscript/pkg/eval"
+	"github.com/kjbreil/goscript/pkg/periodic"
+	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/hass-ws/model"
 	"time"
 )
@@ -36,28 +39,12 @@ type Trigger struct {
 	Triggers      EntityTriggers
 	DomainTrigger []string // DomainTrigger, triggers of everything in the domain, also attaches all States for the domain
 	Services      []string // Services to trigger on. Eval is ignored for services.
-	Periodic
+	periodic.Periodic
 	States       []string
 	DomainStates []string
 	Eval         []string
 	nextTime     *time.Time
 	Func         TriggerFunc
-}
-
-// The Unique task will wait until the currently running task finishes to start. To quickly kill tasks that are
-// running it is important to only use the task methods within a trigger function instead of time.Sleep. If
-// Unique.KillMe is set to true the task will not be setup and will not run if another task is running of the same type.
-// Unique.UUID is used to link multiple triggers together. For example two triggers that control the same light and you
-// only want one of the trigger functions to run at a time. Unique.Wait waits until the current task is finished before
-// running, will build up multiple tasks. The queue is based on the UUID so linking the UUID's will make one bit queue.
-type Unique struct {
-	KillMe bool
-	Wait   bool
-	UUID   *uuid.UUID
-
-	running *bool
-	ctx     context.Context
-	cancel  context.CancelFunc
 }
 
 // TriggerFunc is the function to run when the criteria are met. Within the trigger function a *Task is available.
@@ -66,20 +53,23 @@ type TriggerFunc func(t *Task)
 
 // NextTime returns the next time the trigger should fire, or nil if the trigger should never fire again.
 // The time argument is the current time, and is used to calculate the next fire time based on the trigger's periodic schedule.
-
-func (t *Trigger) NextTime(tt time.Time) (*time.Time, error) {
-	if len(t.Periodic) == 0 {
+func (tr *Trigger) NextTime(tt time.Time) (*time.Time, error) {
+	if len(tr.Periodic) == 0 {
 		return nil, nil
 	}
 
-	nt, err := helpers.NextTime(t.Periodic, tt)
+	nt, err := helpers.NextTime(tr.Periodic, tt)
 	if err != nil {
-		t.nextTime = nil
+		tr.nextTime = nil
 		return nil, err
 	}
 
-	t.nextTime = &nt
+	tr.nextTime = &nt
 	return &nt, nil
+}
+
+func (tr *Trigger) GetNextTime() *time.Time {
+	return tr.nextTime
 }
 
 // Entities is a simple helper function to create a []string. Will most likely be removed in the future.
@@ -87,31 +77,7 @@ func Entities(entities ...string) []string {
 	return entities
 }
 
-// AddTrigger adds a trigger to the trigger map. There is no validation of a trigger.
-func (gs *GoScript) AddTrigger(tr *Trigger) {
-	tr = setupTrigger(tr)
-	// for each entity add to the triggers map
-	for _, et := range tr.Triggers {
-		gs.triggers[et] = append(gs.triggers[et], tr)
-	}
-
-	// for each domain add to the domain trigger map
-	for _, edt := range tr.DomainTrigger {
-		gs.domainTrigger[edt] = append(gs.domainTrigger[edt], tr)
-	}
-
-	// for each periodic add to the periodic map
-	// cron time is an array of triggers so multiple triggers can have same cron schedule
-	for _, ep := range tr.Periodic {
-		gs.periodic[ep] = append(gs.periodic[ep], tr)
-	}
-
-	for _, es := range tr.Services {
-		gs.serviceTriggers[es] = append(gs.serviceTriggers[es], tr)
-	}
-}
-
-func setupTrigger(tr *Trigger) *Trigger {
+func SetupTrigger(tr *Trigger) *Trigger {
 	// set up the trigger object
 	tr.uuid = uuid.New()
 	if tr.Unique != nil {
@@ -156,54 +122,6 @@ func mapToSlice(s map[string]struct{}) []string {
 	return rtn
 }
 
-// RemoveTrigger can be used to remove a trigger while program is running.
-func (gs *GoScript) RemoveTrigger(t *Trigger) {
-	for _, et := range t.Triggers {
-		for i, te := range gs.triggers[et] {
-			if te.uuid == t.uuid {
-				gs.triggers[et] = append(gs.triggers[et][:i], gs.triggers[et][i+1:]...)
-				break
-			}
-		}
-	}
-}
-
-// AddTriggers helper function to add multiple triggers
-func (gs *GoScript) AddTriggers(triggers ...*Trigger) {
-	for _, t := range triggers {
-		gs.AddTrigger(t)
-	}
-}
-
-func (gs *GoScript) runTriggers(message model.Message) {
-	if tr, ok := gs.triggers[message.DomainEntity()]; ok {
-		for _, trigger := range tr {
-			gs.triggerDomainEntity(&message, trigger)
-		}
-	}
-
-	if tr, ok := gs.domainTrigger[message.Domain()]; ok {
-		for _, trigger := range tr {
-			gs.triggerDomain(&message, trigger)
-		}
-	}
-}
-
-func (gs *GoScript) triggerDomainEntity(message *model.Message, trigger *Trigger) {
-	passed := trigger.eval(message)
-	if passed {
-		task := gs.newTask(trigger, message)
-		gs.taskToRun.add(task)
-	}
-}
-func (gs *GoScript) triggerDomain(message *model.Message, trigger *Trigger) {
-	passed := trigger.eval(message)
-	if passed {
-		task := gs.newTask(trigger, message)
-		gs.taskToRun.add(task)
-	}
-}
-
 type EntityTriggers []string
 
 func MakeEntityTriggers(triggers ...[]string) EntityTriggers {
@@ -214,20 +132,19 @@ func MakeEntityTriggers(triggers ...[]string) EntityTriggers {
 	return et
 }
 
-func (gs *GoScript) runServiceTriggers(message model.Message) {
-	if message.Event != nil && message.Event.Data != nil && message.Event.Data.ServiceData != nil {
-		for _, entity := range message.Event.Data.ServiceData.EntityId {
-			if tr, ok := gs.serviceTriggers[entity]; ok {
-				for _, trigger := range tr {
-					gs.triggerService(&message, trigger)
-				}
-			}
-		}
-	}
-
+func (tr *Trigger) UUID() uuid.UUID {
+	return tr.uuid
 }
 
-func (gs *GoScript) triggerService(message *model.Message, trigger *Trigger) {
-	task := gs.newTask(trigger, message)
-	gs.taskToRun.add(task)
+func (tr *Trigger) Evaluate(message *model.Message) bool {
+	passed := !(len(tr.Eval) > 0)
+
+	states := state.NewSingleStates(message.DomainEntity(), state.MessageState(message))
+
+	for _, e := range tr.Eval {
+		if eval.Evaluate(states, e) {
+			passed = true
+		}
+	}
+	return passed
 }

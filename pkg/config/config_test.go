@@ -1,4 +1,4 @@
-package goscript
+package config
 
 import (
 	"testing"

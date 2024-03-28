@@ -1,4 +1,4 @@
-package goscript
+package core
 
 import "github.com/kjbreil/hass-ws/services"
 

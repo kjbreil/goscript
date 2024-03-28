@@ -1,4 +1,4 @@
-package goscript
+package trigger
 
 import (
 	"context"

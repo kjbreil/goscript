@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/kjbreil/goscript"
+	"github.com/kjbreil/goscript/pkg/config"
+	"github.com/kjbreil/goscript/pkg/core"
+	"github.com/kjbreil/goscript/pkg/eval"
+	"github.com/kjbreil/goscript/pkg/periodic"
+	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/kjbreil/hass-mqtt/device"
 	"github.com/kjbreil/hass-mqtt/entities"
 	"github.com/kjbreil/hass-ws/services"
@@ -13,37 +17,37 @@ import (
 )
 
 func main() {
-	config, err := goscript.ParseConfig("config.yml", nil)
+	config, err := config.ParseConfig("config.yml", nil)
 	if err != nil {
 		panic(err)
 	}
 
-	gs, err := goscript.New(config, goscript.DefaultLogger())
+	gs, err := core.New(config, core.DefaultLogger())
 	if err != nil {
 		panic(err)
 	}
 
-	gs.AddTrigger(&goscript.Trigger{
-		Unique: &goscript.Unique{KillMe: false},
+	gs.AddTrigger(&trigger.Trigger{
+		Unique: &trigger.Unique{KillMe: false},
 		// Triggers:      []string{"input_button.test_button"},
 		// DomainTrigger: []string{"input_button"},
 		// Periodic: goscript.Periodics(""),
 		// Periodic: goscript.Periodics("*/3 * * * * *"),
-		Periodic: goscript.Periodics("0 */10 * * * *", ""),
+		Periodic: periodic.Periodics("0 */10 * * * *", ""),
 
-		States: goscript.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
+		States: trigger.Entities("input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"),
 		Eval:   nil,
-		Func: func(t *goscript.Task) {
+		Func: func(t *trigger.Task) {
 			gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
 			time.Sleep(10 * time.Second)
 			// gs.ServiceChan <- services.NewInputBooleanToggle(services.Targets("input_boolean.test_toggle"))
 		},
 	})
 
-	gs.AddTrigger(&goscript.Trigger{
+	gs.AddTrigger(&trigger.Trigger{
 		Services: []string{"cover.kids_room_shades"},
-		Eval:     goscript.Eval(`state == "on"`),
-		Func: func(t *goscript.Task) {
+		Eval:     eval.Eval(`state == "on"`),
+		Func: func(t *trigger.Task) {
 			fmt.Println("here")
 		},
 	})
@@ -57,10 +61,10 @@ func main() {
 
 	switchOptions := entities.NewSwitchOptions()
 	switchOptions.Name("Task Switch").
-		CommandFunc(gs.TaskMQTT(&goscript.Trigger{
+		CommandFunc(gs.TaskMQTT(&trigger.Trigger{
 			States: []string{"input_button.test_button", "input_boolean.test_toggle", "input_number.test_number"},
-			Unique: &goscript.Unique{},
-			Func: func(t *goscript.Task) {
+			Unique: &trigger.Unique{},
+			Func: func(t *trigger.Task) {
 				now := time.Now()
 				gs.Logger().Info(fmt.Sprintf("Task Toggled - Bad Sleep - %s", now.Format(time.RFC3339)))
 				t.Sleep(10 * time.Second)

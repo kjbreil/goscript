@@ -1,4 +1,4 @@
-package goscript
+package state
 
 import "testing"
 

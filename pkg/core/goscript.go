@@ -1,4 +1,4 @@
-package goscript
+package core
 
 import (
 	"context"
@@ -6,35 +6,37 @@ import (
 	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/funcr"
-	"github.com/google/uuid"
+	config2 "github.com/kjbreil/goscript/pkg/config"
+	"github.com/kjbreil/goscript/pkg/device"
+	"github.com/kjbreil/goscript/pkg/state"
+	"github.com/kjbreil/goscript/pkg/trigger"
 	hassmqtt "github.com/kjbreil/hass-mqtt"
 	hassws "github.com/kjbreil/hass-ws"
 	"github.com/kjbreil/hass-ws/model"
 	"github.com/kjbreil/hass-ws/services"
-	"sync"
 	"time"
 )
 
 // GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
 type GoScript struct {
-	config *Config
+	config *config2.Config
 	mqtt   *hassmqtt.Client
 	ws     *hassws.Client
 
 	// maps holding state based triggers
-	periodic        map[string][]*Trigger
+	periodic        map[string][]*trigger.Trigger
 	nextPeriodic    time.Time
-	triggers        map[string][]*Trigger
-	domainTrigger   map[string][]*Trigger
-	serviceTriggers map[string][]*Trigger
+	triggers        map[string][]*trigger.Trigger
+	domainTrigger   map[string][]*trigger.Trigger
+	serviceTriggers map[string][]*trigger.Trigger
 
-	triggerRunning triggerRunning
+	triggerRunning trigger.Running
 
-	devices map[string]*Device
+	devices map[string]*device.Device
 
 	areaRegistry map[string][]model.Result
 
-	taskToRun taskMap
+	taskToRun trigger.TaskMap
 
 	// Context for the GoScript
 	ctx    context.Context
@@ -42,13 +44,13 @@ type GoScript struct {
 
 	ServiceChan ServiceChan
 	// states store
-	states States
+	states state.States
 
 	logger logr.Logger
 }
 
 // New creates a new GoScript instance
-func New(c *Config, logger logr.Logger) (*GoScript, error) {
+func New(c *config2.Config, logger logr.Logger) (*GoScript, error) {
 	var err error
 
 	gs := &GoScript{
@@ -67,25 +69,16 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	}
 	gs.ws.Logger()
 
-	gs.triggers = make(map[string][]*Trigger)
-	gs.domainTrigger = make(map[string][]*Trigger)
-	gs.periodic = make(map[string][]*Trigger)
-	gs.serviceTriggers = make(map[string][]*Trigger)
+	gs.triggers = make(map[string][]*trigger.Trigger)
+	gs.domainTrigger = make(map[string][]*trigger.Trigger)
+	gs.periodic = make(map[string][]*trigger.Trigger)
+	gs.serviceTriggers = make(map[string][]*trigger.Trigger)
 	gs.ServiceChan = make(chan services.Service, 100)
-	gs.taskToRun = taskMap{
-		tasks: make(map[uuid.UUID][]*Task),
-		m:     &sync.Mutex{},
-	}
-	gs.triggerRunning = triggerRunning{
-		m: make(map[uuid.UUID]*bool),
-		s: &sync.Mutex{},
-	}
+	gs.taskToRun = trigger.NewTaskMap()
+	gs.triggerRunning = trigger.NewRunning()
 
-	gs.states = States{
-		s: make(map[string]*State),
-		m: &sync.Mutex{},
-	}
-	gs.devices = make(map[string]*Device)
+	gs.states = state.NewStates()
+	gs.devices = make(map[string]*device.Device)
 
 	return gs, nil
 }
@@ -153,24 +146,9 @@ func (gs *GoScript) runFunctions() {
 		case <-gs.ctx.Done():
 			return
 		case <-timer.C:
-			var ran []uuid.UUID
-			gs.taskToRun.m.Lock()
-			for u, tasks := range gs.taskToRun.tasks {
-				if len(tasks) > 0 {
-					t := tasks[0]
-					if !*t.running {
-						go gs.runTask(t)
-						gs.taskToRun.tasks[u] = tasks[1:]
-					}
-				}
-				if len(tasks) == 0 {
-					ran = append(ran, u)
-				}
+			for _, t := range gs.taskToRun.ToRun() {
+				go gs.runTask(t)
 			}
-			for _, u := range ran {
-				delete(gs.taskToRun.tasks, u)
-			}
-			gs.taskToRun.m.Unlock()
 		}
 	}
 }

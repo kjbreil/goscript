@@ -1,26 +1,29 @@
-package goscript
+package core
 
-import mqtt "github.com/eclipse/paho.mqtt.golang"
+import (
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/kjbreil/goscript/pkg/trigger"
+)
 
 // SubscribeMqtt subscribes to a top with a trigger
-func (gs *GoScript) SubscribeMqtt(topic string, qos byte, tr *Trigger) {
-	tr = setupTrigger(tr)
+func (gs *GoScript) SubscribeMqtt(topic string, qos byte, tr *trigger.Trigger) {
+	tr = trigger.SetupTrigger(tr)
 
 	gs.mqtt.Subscribe(topic, qos, func(client mqtt.Client, message mqtt.Message) {
 		task := gs.newTask(tr, nil)
 		task.MqttMessage = message
-		gs.taskToRun.add(task)
+		gs.taskToRun.Add(task)
 	})
 }
 
 // TaskMQTT wraps a trigger and TaskFunc setting up and passing the task through
-func (gs *GoScript) TaskMQTT(tr *Trigger) func(message mqtt.Message, client mqtt.Client) {
+func (gs *GoScript) TaskMQTT(tr *trigger.Trigger) func(message mqtt.Message, client mqtt.Client) {
 	// setup the trigger
-	tr = setupTrigger(tr)
+	tr = trigger.SetupTrigger(tr)
 
 	return func(message mqtt.Message, client mqtt.Client) {
 		task := gs.newTask(tr, nil)
 		task.MqttMessage = message
-		gs.taskToRun.add(task)
+		gs.taskToRun.Add(task)
 	}
 }

@@ -1,17 +1,16 @@
-package goscript
+package eval
 
 import (
 	"fmt"
 	"github.com/antonmedv/expr"
-	"github.com/kjbreil/hass-ws/model"
-	"sync"
+	"github.com/kjbreil/goscript/pkg/state"
 )
 
 func Eval(exp ...string) []string {
 	return exp
 }
 
-func Evaluates(states States, eval []string) bool {
+func Evaluates(states state.States, eval []string) bool {
 	passed := false
 	for _, e := range eval {
 		if Evaluate(states, e) {
@@ -21,7 +20,7 @@ func Evaluates(states States, eval []string) bool {
 	return passed
 }
 
-func Evaluate(states States, eval string) bool {
+func Evaluate(states state.States, eval string) bool {
 	var passed bool
 
 	program, err := expr.Compile(eval, expr.Env(map[string]interface{}{}),
@@ -34,11 +33,8 @@ func Evaluate(states States, eval string) bool {
 
 	env := make(map[string]interface{})
 
-	states.m.Lock()
-	defer states.m.Unlock()
-
-	if len(states.s) == 1 {
-		for _, state := range states.s {
+	if states.Len() == 1 {
+		for _, state := range states.Slice() {
 			env["state"] = string(state.State)
 			// add attributes to env
 			if attr := state.Attributes; attr != nil {
@@ -55,7 +51,7 @@ func Evaluate(states States, eval string) bool {
 		}
 	}
 
-	for _, state := range states.s {
+	for _, state := range states.Slice() {
 		env[state.DomainEntity] = string(state.State)
 		if attr := state.Attributes; attr != nil {
 			for k, v := range attr {
@@ -81,23 +77,5 @@ func Evaluate(states States, eval string) bool {
 		passed = true
 	}
 
-	return passed
-}
-
-func (t *Trigger) eval(message *model.Message) bool {
-	passed := !(len(t.Eval) > 0)
-
-	states := States{
-		s: map[string]*State{
-			message.DomainEntity(): MessageState(message),
-		},
-		m: &sync.Mutex{},
-	}
-
-	for _, e := range t.Eval {
-		if Evaluate(states, e) {
-			passed = true
-		}
-	}
 	return passed
 }

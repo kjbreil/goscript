@@ -1,7 +1,7 @@
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/kjbreil/goscript)
 
 # GoScript
-Something like PyScript for Home Assistant but in Go. Functionality is being added as needed for my automations but once I have finished what I need I will go through PyScript and backfill any missing functionality. There will be additions to what PyScript can like the ability to add new devices to Home Assistant through MQTT.
+Something like PyScript for Home Assistant but in Go. Functionality is being added as needed for my automations but once I have finished what I need I will go through PyScript and backfill any missing functionality. There will be additions to what PyScript can like the ability to Add new devices to Home Assistant through MQTT.
 
 
 ## Configuration
@@ -111,7 +111,7 @@ go generate ./...
 ```
 
 ### Calling a Service
-To call a service you create a service and then add options to the service. Check the source files for available options. They are not yet commented but will have comments in the future. I recommend using Home Assistant Developer Tools -> Services page to get a better understanding of what is needed for each call and to test. There is no reporting of requirements in the service definitions so be warned, some parameters are required and others are not, it is also conditional at times. For example `ClimateSetTemperature{}` needs `TargetTempHigh(float64)` and `TargetTempLow(float64)` when the mode is Heat/Cool however if the mode is Heat or the mode is Cool then `Temperature(float64)` is needed and both `TargetTempHigh(float64)` and `TargetTempLow(float64)` are ignored.
+To call a service you create a service and then Add options to the service. Check the source files for available options. They are not yet commented but will have comments in the future. I recommend using Home Assistant Developer Tools -> Services page to get a better understanding of what is needed for each call and to test. There is no reporting of requirements in the service definitions so be warned, some parameters are required and others are not, it is also conditional at times. For example `ClimateSetTemperature{}` needs `TargetTempHigh(float64)` and `TargetTempLow(float64)` when the mode is Heat/Cool however if the mode is Heat or the mode is Cool then `Temperature(float64)` is needed and both `TargetTempHigh(float64)` and `TargetTempLow(float64)` are ignored.
 ```go
 service := services.NewClimateSetTemperature(services.Targets("climate.kitchen")).
 		HvacMode(services.HvacModeheat_cool).

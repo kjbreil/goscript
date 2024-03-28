@@ -1,7 +1,6 @@
-package goscript
+package state
 
 import (
-	"github.com/google/uuid"
 	"github.com/kjbreil/hass-ws/model"
 	"strings"
 	"sync"
@@ -22,6 +21,26 @@ type State struct {
 	LastUpdated  time.Time
 }
 
+func NewStates() States {
+	return States{
+		s: make(map[string]*State),
+		m: &sync.Mutex{},
+	}
+}
+
+func NewSingleStates(entityID string, eState *State) States {
+	return States{
+		s: map[string]*State{entityID: eState},
+		m: &sync.Mutex{},
+	}
+}
+
+func NewMultiStates(states map[string]*State) States {
+	return States{
+		s: states,
+		m: &sync.Mutex{},
+	}
+}
 func StateFromWS(s *model.State) *State {
 	if s.State == nil || s.EntityId == nil {
 		return nil
@@ -36,6 +55,18 @@ func StateFromWS(s *model.State) *State {
 		LastUpdated:  *s.LastUpdated,
 		Attributes:   s.Attributes,
 	}
+}
+
+func (s *States) Lock() {
+	s.m.Lock()
+}
+
+func (s *States) Unlock() {
+	s.m.Unlock()
+}
+
+func (s *States) Len() int {
+	return len(s.s)
 }
 
 // Insert only adds to the map if something does not exist already. Returns what is in the map whether added or not
@@ -183,96 +214,6 @@ func (s *States) Where(state string) *States {
 		}
 	}
 	return &sts
-}
-
-func (gs *GoScript) GetState(entityId string) *State {
-	s, _ := gs.states.Get(entityId)
-	return s
-}
-
-func (gs *GoScript) GetStates(domainentity []string) *States {
-	rtn := States{
-		s: gs.states.Find(domainentity),
-		m: &sync.Mutex{},
-	}
-	return &rtn
-}
-
-func (gs *GoScript) GetDomainStates(domainentity []string) *States {
-	rtn := States{
-		s: gs.states.FindDomainMap(domainentity),
-		m: &sync.Mutex{},
-	}
-
-	return &rtn
-}
-
-func (gs *GoScript) handleMessage(message model.Message) {
-	if message.Type == model.MessageTypeEvent {
-		switch message.Event.EventType {
-		case model.EventTypeStateChanged:
-
-			s := &State{
-				DomainEntity: message.DomainEntity(),
-				Domain:       message.Domain(),
-				Entity:       message.EntityID(),
-				State:        StateText(message.State()),
-				Attributes:   message.Attributes(),
-			}
-
-			gs.states.Upsert(s)
-
-			gs.runTriggers(message)
-		case model.EventTypeCallService:
-
-			gs.runServiceTriggers(message)
-		}
-	}
-}
-
-func (gs *GoScript) handleGetStates(states []model.Result) {
-	statesFuncToRun := make(map[uuid.UUID]*Task)
-
-	for _, sr := range states {
-		s := &State{
-			DomainEntity: sr.DomainEntity(),
-			Domain:       sr.Domain(),
-			Entity:       sr.EntityID(),
-			State:        StateText(sr.State()),
-			Attributes:   sr.Attributes,
-		}
-
-		gs.states.Upsert(s)
-	}
-
-	for _, sr := range states {
-		domainEntity := sr.DomainEntity()
-		entityState := sr.State()
-		message := &model.Message{
-			Type: model.MessageTypeEvent,
-			Event: &model.Event{
-				Data: &model.Data{
-					EntityId: &domainEntity,
-					NewState: &model.State{
-						EntityId:    &domainEntity,
-						LastChanged: sr.LastChanged,
-						State:       &entityState,
-						Attributes:  sr.Attributes,
-						LastUpdated: sr.LastUpdated,
-						Context:     sr.Context,
-					},
-					OldState: nil,
-				},
-				EventType: model.EventTypeStateChanged,
-				Context:   sr.Context,
-			},
-		}
-
-		gs.runTriggers(*message)
-	}
-	for _, t := range statesFuncToRun {
-		gs.taskToRun.add(t)
-	}
 }
 
 func MessageState(message *model.Message) *State {
