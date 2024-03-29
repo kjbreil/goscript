@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/kjbreil/goscript/modules/motion"
 	"github.com/kjbreil/goscript/pkg/config"
 	"github.com/kjbreil/goscript/pkg/core"
 	"github.com/kjbreil/goscript/pkg/eval"
+	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/periodic"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/kjbreil/hass-mqtt/device"
@@ -17,6 +19,7 @@ import (
 )
 
 func main() {
+
 	config, err := config.ParseConfig("config.yml", nil)
 	if err != nil {
 		panic(err)
@@ -26,6 +29,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	var ms []module.Module
+	ms = append(ms, motion.New(gs))
 
 	gs.AddTrigger(&trigger.Trigger{
 		Unique: &trigger.Unique{KillMe: false},

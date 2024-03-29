@@ -1,7 +1,8 @@
 package light
 
 import (
-	"github.com/kjbreil/goscript"
+	"github.com/kjbreil/goscript/pkg/core"
+	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/kjbreil/hass-mqtt/entities"
 	"sync"
 	"testing"
@@ -10,11 +11,11 @@ import (
 
 func TestLightsInDevice(t *testing.T) {
 
-	var preFns []goscript.TestFunc
-	var postFns []goscript.TestFunc
+	var preFns []core.TestFunc
+	var postFns []core.TestFunc
 	wg := &sync.WaitGroup{}
 
-	preFns = append(preFns, func(gs *goscript.GoScript) error {
+	preFns = append(preFns, func(gs *core.GoScript) error {
 		device, err := gs.GetDevice("test_devices")
 		if err != nil {
 			return err
@@ -26,17 +27,17 @@ func TestLightsInDevice(t *testing.T) {
 			"light.light_1",
 			"light.light_2",
 		}
-		//allUuid := uuid.New()
+		// allUuid := uuid.New()
 
 		lightOneOptions := entities.NewLightOptions()
 		lightOneOptions.Name("Light 1").
-			CommandFunc(gs.TaskMQTT(&goscript.Trigger{
+			CommandFunc(gs.TaskMQTT(&trigger.Trigger{
 				States: esp,
-				Unique: &goscript.Unique{
+				Unique: &trigger.Unique{
 					Wait: true,
-					//UUID: &allUuid,
+					// UUID: &allUuid,
 				},
-				Func: func(task *goscript.Task) {
+				Func: func(task *trigger.Task) {
 					t.Logf("LightOne Triggered")
 					switch lightOneOptions.States().State {
 					case "ON":
@@ -58,13 +59,13 @@ func TestLightsInDevice(t *testing.T) {
 
 		lightTwoOptions := entities.NewLightOptions()
 		lightTwoOptions.Name("Light 2").
-			CommandFunc(gs.TaskMQTT(&goscript.Trigger{
+			CommandFunc(gs.TaskMQTT(&trigger.Trigger{
 				States: esp,
-				Unique: &goscript.Unique{
+				Unique: &trigger.Unique{
 					Wait: true,
-					//UUID: &allUuid,
+					// UUID: &allUuid,
 				},
-				Func: func(task *goscript.Task) {
+				Func: func(task *trigger.Task) {
 					t.Logf("LightTwo Triggered")
 					switch lightTwoOptions.States().State {
 					case "ON":
@@ -87,13 +88,13 @@ func TestLightsInDevice(t *testing.T) {
 
 		lightThreeOptions := entities.NewLightOptions()
 		lightThreeOptions.Name("Light 3").
-			CommandFunc(gs.TaskMQTT(&goscript.Trigger{
+			CommandFunc(gs.TaskMQTT(&trigger.Trigger{
 				States: esp,
-				Unique: &goscript.Unique{
+				Unique: &trigger.Unique{
 					Wait: true,
-					//UUID: &allUuid,
+					// UUID: &allUuid,
 				},
-				Func: func(task *goscript.Task) {
+				Func: func(task *trigger.Task) {
 					t.Logf("LightThree Triggered")
 					switch lightThreeOptions.States().State {
 					case "ON":
@@ -116,11 +117,11 @@ func TestLightsInDevice(t *testing.T) {
 		return nil
 	})
 
-	postFns = append(postFns, func(gs *goscript.GoScript) error {
+	postFns = append(postFns, func(gs *core.GoScript) error {
 		time.Sleep(5 * time.Minute)
 
 		return nil
 	})
 
-	goscript.GoScriptTestRun(preFns, postFns, wg, t)
+	core.GoScriptTestRun(preFns, postFns, wg, t)
 }

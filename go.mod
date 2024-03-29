@@ -13,6 +13,7 @@ require (
 	github.com/kjbreil/hass-mqtt v0.2.3
 	github.com/kjbreil/hass-ws v0.2.2
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/sixdouglas/suncalc v0.0.0-20230303054245-f8bc8c69d09e
 )
 
 require (
