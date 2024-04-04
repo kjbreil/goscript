@@ -1,9 +1,10 @@
-package config
+package core
 
 import (
 	"errors"
 	"github.com/goccy/go-yaml"
 	"github.com/iancoleman/strcase"
+	"github.com/kjbreil/goscript/pkg/module"
 	mqtt "github.com/kjbreil/hass-mqtt"
 	ws "github.com/kjbreil/hass-ws"
 	"github.com/mitchellh/mapstructure"
@@ -16,10 +17,8 @@ import (
 type Config struct {
 	Websocket *ws.Config
 	MQTT      *mqtt.Config
-	Modules   Modules
+	Modules   module.Modules
 }
-
-type Modules map[string]interface{}
 
 var (
 	ErrModuleNotFound = errors.New("module not found")
@@ -32,7 +31,7 @@ func (c *Config) GetModule(key string) (interface{}, error) {
 	return nil, ErrModuleNotFound
 }
 
-func ParseConfig(filename string, modules Modules) (*Config, error) {
+func ParseConfig(filename string, modules []module.Module) (*Config, error) {
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -48,7 +47,7 @@ func ParseConfig(filename string, modules Modules) (*Config, error) {
 
 var DecodeHookFuncs []mapstructure.DecodeHookFunc
 
-func ParseConfigData(data []byte, modules Modules) (*Config, error) {
+func ParseConfigData(data []byte, modules []module.Module) (*Config, error) {
 
 	var configMap map[string]interface{}
 	err := yaml.Unmarshal(data, &configMap)
@@ -57,7 +56,7 @@ func ParseConfigData(data []byte, modules Modules) (*Config, error) {
 	}
 
 	var c Config
-	c.Modules = make(map[string]interface{})
+	c.Modules = make(module.Modules, len(modules))
 
 	var decoder *mapstructure.Decoder
 	decoder, err = configDecoder(&c)
@@ -69,15 +68,19 @@ func ParseConfigData(data []byte, modules Modules) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = c.decodeModules(modules, configMap)
+
+	for _, m := range modules {
+		c.Modules[m.Name()] = m
+	}
+	err = c.decodeModules(configMap)
 	if err != nil {
 		return nil, err
 	}
 	return &c, nil
 }
 
-func (c *Config) decodeModules(modules Modules, configMap map[string]interface{}) error {
-	for k, v := range modules {
+func (c *Config) decodeModules(configMap map[string]interface{}) error {
+	for k, v := range c.Modules {
 		if m, ok := configMap[k]; ok {
 			v := v
 			decoder, err := configDecoder(&v)

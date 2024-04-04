@@ -17,6 +17,7 @@ require (
 )
 
 require (
+	github.com/dave/jennifer v1.7.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/go-playground/validator/v10 v10.16.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect

@@ -1,7 +1,6 @@
 package core
 
 import (
-	config2 "github.com/kjbreil/goscript/pkg/config"
 	"github.com/kjbreil/hass-mqtt/device"
 	"github.com/kjbreil/hass-mqtt/entities"
 	"sync"
@@ -9,7 +8,7 @@ import (
 )
 
 func GoScriptTestRun(preFns []TestFunc, postFns []TestFunc, wg *sync.WaitGroup, t *testing.T) {
-	config, err := config2.ParseConfig("config.yml", nil)
+	config, err := ParseConfig("config.yml", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

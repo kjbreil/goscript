@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/funcr"
-	config2 "github.com/kjbreil/goscript/pkg/config"
 	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/goscript/pkg/trigger"
@@ -19,7 +18,7 @@ import (
 
 // GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
 type GoScript struct {
-	config *config2.Config
+	config *Config
 	mqtt   *hassmqtt.Client
 	ws     *hassws.Client
 
@@ -50,7 +49,7 @@ type GoScript struct {
 }
 
 // New creates a new GoScript instance
-func New(c *config2.Config, logger logr.Logger) (*GoScript, error) {
+func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	var err error
 
 	gs := &GoScript{
@@ -166,6 +165,13 @@ func (gs *GoScript) Close() {
 // GetModule returns the config module in interface{} form, must be cast to module type
 func (gs *GoScript) GetModule(key string) (interface{}, error) {
 	return gs.config.GetModule(key)
+}
+
+func GetModule[T any](gs *GoScript, key string) T {
+	if v, ok := gs.config.Modules[key]; ok {
+		return v.(T)
+	}
+	panic(ErrModuleNotFound)
 }
 
 func DefaultLogger() logr.Logger {
