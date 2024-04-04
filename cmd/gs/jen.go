@@ -1,29 +1,31 @@
 package main
 
 import (
-	"fmt"
 	. "github.com/dave/jennifer/jen"
 	"github.com/iancoleman/strcase"
 )
 
-func genMain(filename string, modules map[string]string) ([]byte, error) {
+func genMain(filename string, modules map[string]string) (*File, error) {
 	f := NewFile("main")
 	f.Func().Id("main").Params().Block(
 		Id("ms").Op(":=").Index().
-			Qual("github.com/kjbreil/goscript/pkg/core", "Module").
+			Qual("github.com/kjbreil/goscript/pkg/module", "Module").
 			ValuesFunc(func(group *Group) {
 				for k, v := range modules {
-					group.Add(Op("&")).Qual(v, k).Block()
+					group.Add(Op("&")).Qual(v, strcase.ToCamel(k)).Block()
 				}
 			}),
-		List(Id("config"), Error()).Op(":=").
+		List(Id("config"), Err()).Op(":=").
 			Qual("github.com/kjbreil/goscript/pkg/core", "ParseConfig").
-			Call(Lit(filename)),
+			Call(Lit(filename), Id("ms")),
 		ifError(),
-		List(Id("gs"), Error()).Op(":=").
+		Line(),
+
+		List(Id("gs"), Err()).Op(":=").
 			Qual("github.com/kjbreil/goscript/pkg/core", "New").
 			Call(List(Id("config"), Qual("github.com/kjbreil/goscript/pkg/core", "DefaultLogger").Call())),
 		ifError(),
+		Line(),
 
 		Id("gs").Dot("UpdateModule").
 			CallFunc(func(group *Group) {
@@ -34,16 +36,19 @@ func genMain(filename string, modules map[string]string) ([]byte, error) {
 					))
 				}
 			}),
-		Id("err").Op(":=").Id("gs").Dot("Connect"),
+		Err().Op("=").Id("gs").Dot("Connect").Call(),
 		ifError(),
+		Line(),
+
 		Id("done").Op(":=").Make(List(Chan().Qual("os", "Signal"), Lit(1))),
-		Qual("signal", "Notify").Call(Id("done"), Qual("os", "Interrupt"), Qual("syscall", "SIGINT"), Qual("syscall", "SIGTERM")),
+		Qual("os/signal", "Notify").Call(Id("done"), Qual("os", "Interrupt"), Qual("syscall", "SIGINT"), Qual("syscall", "SIGTERM")),
 		Id("gs").Dot("Logger").Call().Dot("Info").Call(Lit("Everything is set up")),
+		Line(),
+
 		Op("<-").Id("done"),
 		Id("gs").Dot("Close").Call(),
 	)
-	fmt.Printf("%#v", f)
-	return nil, nil
+	return f, nil
 }
 
 func ifError() *Statement {

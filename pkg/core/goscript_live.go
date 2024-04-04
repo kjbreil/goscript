@@ -52,9 +52,9 @@ func GoScriptTestRun(preFns []TestFunc, postFns []TestFunc, wg *sync.WaitGroup, 
 	// <-done
 }
 
-type TestFunc func(gs *GoScript) error
+type TestFunc func(gs *Core) error
 
-func generateTestDevices(gs *GoScript) error {
+func generateTestDevices(gs *Core) error {
 	mainDevice := device.New("Test Devices", "test_devices", "Tester 1000", "goscript", "0.0.1")
 
 	d, err := gs.AddDevice(mainDevice)

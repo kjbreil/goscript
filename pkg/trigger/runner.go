@@ -1,0 +1,205 @@
+package trigger
+
+import (
+	"context"
+	"fmt"
+	"github.com/adhocore/gronx"
+	"github.com/go-logr/logr"
+	"github.com/kjbreil/goscript/pkg/service"
+	"github.com/kjbreil/goscript/pkg/state"
+	"time"
+)
+
+type Runner struct {
+	// maps holding state based triggers
+	periodic        map[string]Triggers
+	nextPeriodic    time.Time
+	triggers        map[string]Triggers
+	domainTrigger   map[string]Triggers
+	serviceTriggers map[string]Triggers
+
+	triggerRunning Running
+
+	taskToRun TaskMap
+	states    *state.States
+	sChan     service.Chan
+	logger    logr.Logger
+	ctx       context.Context
+}
+
+func NewRunner(ctx context.Context, states *state.States, sChan service.Chan, logger logr.Logger) *Runner {
+	return &Runner{
+		triggers:        make(map[string]Triggers),
+		domainTrigger:   make(map[string]Triggers),
+		serviceTriggers: make(map[string]Triggers),
+		periodic:        make(map[string]Triggers),
+		triggerRunning:  NewRunning(),
+		states:          states,
+		sChan:           sChan,
+		logger:          logger,
+		ctx:             ctx,
+	}
+}
+
+func (r *Runner) AddTask(t *Task) {
+	r.taskToRun.Add(t)
+}
+func (r *Runner) TaskToRun() []*Task {
+	return r.taskToRun.ToRun()
+}
+
+func (r *Runner) RunPeriodic() {
+	var err error
+	// TODO: Validate Periodic slice
+	// run zero length immediate periodics and delete from periodic list
+	for _, triggers := range r.periodic {
+		for _, t := range triggers {
+			pLen := len(t.Periodic)
+			for i := 0; i < pLen; i++ {
+				if len(t.Periodic[i]) == 0 {
+					task := r.NewTask(t, nil)
+					r.taskToRun.Add(task)
+
+					t.Periodic = append(t.Periodic[:i], t.Periodic[i+1:]...)
+					i--
+					pLen--
+				}
+			}
+		}
+	}
+	delete(r.periodic, "")
+
+	// setup the next fire time for all triggers
+	r.nextPeriodic, err = fillNextTime(r.periodic)
+	if err != nil {
+		r.logger.Error(err, "NextTime")
+	}
+
+	ticker := time.NewTicker(time.Second)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if time.Now().After(r.nextPeriodic) {
+					go r.shouldRunTrigger()
+				}
+			case <-r.ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
+func (r *Runner) shouldRunTrigger() {
+	r.nextPeriodic = time.Now().Add(60 * time.Minute)
+	for _, triggers := range r.periodic {
+		for _, t := range triggers {
+			if t.GetNextTime() == nil {
+				r.logger.Info("next time not set")
+				_, err := t.NextTime(time.Now())
+				if err != nil {
+					r.logger.Error(err, "setting next time failed")
+					continue
+				}
+			}
+			if time.Now().After(*t.GetNextTime()) {
+				task := r.NewTask(t, nil)
+				r.taskToRun.Add(task)
+
+				_, err := t.NextTime(time.Now())
+				if err != nil {
+					r.logger.Error(err, "setting next time failed")
+					continue
+				}
+			}
+			if t.GetNextTime().Before(r.nextPeriodic) {
+				r.nextPeriodic = *t.GetNextTime()
+			}
+		}
+	}
+}
+
+func (r *Runner) runGronJob(gron *gronx.Gronx, start bool) {
+	for expr, triggers := range r.periodic {
+		var err error
+		var due bool
+		if len(expr) == 0 {
+			if start {
+				due = true
+			}
+		} else {
+			due, err = gron.IsDue(expr)
+			if err != nil {
+				r.logger.Error(err, "gron job IsDue failed")
+				continue
+			}
+		}
+		for _, t := range triggers {
+			if due {
+				task := r.NewTask(t, nil)
+				r.taskToRun.Add(task)
+			}
+		}
+	}
+}
+
+func (r *Runner) RunTask(t *Task) {
+	for t.Running() {
+		timer := time.NewTimer(100)
+		select {
+		case <-timer.C:
+		case <-t.CtxDone():
+			r.logger.Info(fmt.Sprintf("task %s exited awaiting to run", t.UUID()))
+			return
+		}
+	}
+
+	defer func() {
+		t.SetRunning(false)
+		t.Cancel()
+		if re := recover(); re != nil {
+			r.logger.Info(fmt.Sprintf("task exited: %v", r))
+		}
+	}()
+
+	t.SetRunning(true)
+
+	go r.taskWaitRequest(t)
+	t.F()(t)
+}
+
+func (r *Runner) taskWaitRequest(t *Task) {
+	var tr *Trigger
+	for {
+		select {
+		case tr = <-t.WaitRequest():
+			// TODO: Validate entityid is valid
+			tr.Func = func(it *Task) {
+				t.WaitDone() <- true
+				r.RemoveTrigger(tr)
+			}
+			r.AddTrigger(tr)
+		case <-t.CtxDone():
+			if tr != nil {
+				r.RemoveTrigger(tr)
+			}
+			return
+		}
+	}
+}
+
+func fillNextTime(periodics map[string]Triggers) (time.Time, error) {
+	next := time.Now().Add(60 * time.Minute)
+	for _, triggers := range periodics {
+		for _, t := range triggers {
+			nt, err := t.NextTime(time.Now())
+			if err != nil {
+				return next, fmt.Errorf("failed to get NextTime for task %s: %w", t.UUID(), err)
+			}
+			if nt != nil && nt.Before(next) {
+				next = *nt
+			}
+		}
+	}
+	return next, nil
+}

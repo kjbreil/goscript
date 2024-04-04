@@ -6,7 +6,7 @@ import (
 	hassdevice "github.com/kjbreil/hass-mqtt/device"
 )
 
-func (gs *GoScript) AddDevice(dev *hassdevice.Device) (*device.Device, error) {
+func (gs *Core) AddDevice(dev *hassdevice.Device) (*device.Device, error) {
 	d := device.NewDevice(dev)
 
 	err := gs.mqtt.Add(dev)
@@ -19,7 +19,7 @@ func (gs *GoScript) AddDevice(dev *hassdevice.Device) (*device.Device, error) {
 	return d, nil
 }
 
-func (gs *GoScript) GetDevice(entity string) (*device.Device, error) {
+func (gs *Core) GetDevice(entity string) (*device.Device, error) {
 	d, ok := gs.devices[entity]
 	if !ok {
 		return nil, fmt.Errorf("could not find device %s", entity)

@@ -16,3 +16,4 @@
 config**.yml
 .idea/**
 docker/**
+/run/**

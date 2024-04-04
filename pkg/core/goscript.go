@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/funcr"
 	"github.com/kjbreil/goscript/pkg/device"
+	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	hassmqtt "github.com/kjbreil/hass-mqtt"
@@ -16,43 +17,34 @@ import (
 	"time"
 )
 
-// GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
-type GoScript struct {
+// Core is the base type for Core holding all the state and functionality for interacting with Home Assistant
+type Core struct {
 	config *Config
 	mqtt   *hassmqtt.Client
 	ws     *hassws.Client
 
-	// maps holding state based triggers
-	periodic        map[string][]*trigger.Trigger
-	nextPeriodic    time.Time
-	triggers        map[string][]*trigger.Trigger
-	domainTrigger   map[string][]*trigger.Trigger
-	serviceTriggers map[string][]*trigger.Trigger
-
-	triggerRunning trigger.Running
+	TrigRunner *trigger.Runner
 
 	devices map[string]*device.Device
 
 	areaRegistry map[string][]model.Result
 
-	taskToRun trigger.TaskMap
-
-	// Context for the GoScript
+	// Context for the Core
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	ServiceChan ServiceChan
+	ServiceChan service.Chan
 	// states store
 	states state.States
 
 	logger logr.Logger
 }
 
-// New creates a new GoScript instance
-func New(c *Config, logger logr.Logger) (*GoScript, error) {
+// New creates a new Core instance
+func New(c *Config, logger logr.Logger) (*Core, error) {
 	var err error
 
-	gs := &GoScript{
+	gs := &Core{
 		config: c,
 		logger: logger,
 	}
@@ -67,16 +59,12 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 		return nil, err
 	}
 	gs.ws.Logger()
-
-	gs.triggers = make(map[string][]*trigger.Trigger)
-	gs.domainTrigger = make(map[string][]*trigger.Trigger)
-	gs.periodic = make(map[string][]*trigger.Trigger)
-	gs.serviceTriggers = make(map[string][]*trigger.Trigger)
-	gs.ServiceChan = make(chan services.Service, 100)
-	gs.taskToRun = trigger.NewTaskMap()
-	gs.triggerRunning = trigger.NewRunning()
-
 	gs.states = state.NewStates()
+
+	gs.TrigRunner = trigger.NewRunner(gs.ctx, &gs.states, gs.ServiceChan, gs.logger)
+
+	gs.ServiceChan = make(chan services.Service, 100)
+
 	gs.devices = make(map[string]*device.Device)
 
 	return gs, nil
@@ -84,7 +72,7 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 
 // Connect connects to the WebSocket server and MQTT server as setup
 // all options need to be passed before firing connect, anything added after will have odd effects
-func (gs *GoScript) Connect() error {
+func (gs *Core) Connect() error {
 	var err error
 
 	gs.ctx, gs.cancel = context.WithCancel(context.Background())
@@ -121,21 +109,22 @@ func (gs *GoScript) Connect() error {
 
 	go gs.runFunctions()
 
-	go gs.runService()
+	service.Run(gs.ctx, gs.ws, gs.logger, gs.ServiceChan)
 
-	go gs.runPeriodic()
+	// TODO: Change this into a RUN function passing the periodics
+	gs.TrigRunner.RunPeriodic()
 
-	gs.logger.Info("GoScript started")
+	gs.logger.Info("Core started")
 
 	return nil
 }
 
 // Logger returns the logr to create your own logs
-func (gs *GoScript) Logger() logr.Logger {
+func (gs *Core) Logger() logr.Logger {
 	return gs.logger
 }
 
-func (gs *GoScript) runFunctions() {
+func (gs *Core) runFunctions() {
 	defer func() {
 		gs.logger.Info("runFunctions exited")
 	}()
@@ -145,15 +134,15 @@ func (gs *GoScript) runFunctions() {
 		case <-gs.ctx.Done():
 			return
 		case <-timer.C:
-			for _, t := range gs.taskToRun.ToRun() {
-				go gs.runTask(t)
+			for _, t := range gs.TrigRunner.TaskToRun() {
+				go gs.TrigRunner.RunTask(t)
 			}
 		}
 	}
 }
 
 // Close the connections to WebSocket and MQTT
-func (gs *GoScript) Close() {
+func (gs *Core) Close() {
 	gs.cancel()
 	err := gs.ws.Close()
 	gs.mqtt.Disconnect()
@@ -163,11 +152,11 @@ func (gs *GoScript) Close() {
 }
 
 // GetModule returns the config module in interface{} form, must be cast to module type
-func (gs *GoScript) GetModule(key string) (interface{}, error) {
+func (gs *Core) GetModule(key string) (interface{}, error) {
 	return gs.config.GetModule(key)
 }
 
-func GetModule[T any](gs *GoScript, key string) T {
+func GetModule[T any](gs *Core, key string) T {
 	if v, ok := gs.config.Modules[key]; ok {
 		return v.(T)
 	}

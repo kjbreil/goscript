@@ -51,6 +51,8 @@ type Trigger struct {
 // See Task for more information on what is available in Task.
 type TriggerFunc func(t *Task)
 
+type Triggers []*Trigger
+
 // NextTime returns the next time the trigger should fire, or nil if the trigger should never fire again.
 // The time argument is the current time, and is used to calculate the next fire time based on the trigger's periodic schedule.
 func (tr *Trigger) NextTime(tt time.Time) (*time.Time, error) {

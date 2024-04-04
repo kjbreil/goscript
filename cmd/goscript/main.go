@@ -12,6 +12,7 @@ import (
 func main() {
 	ms := []module.Module{
 		&motion.Motion{},
+		// &lights.Lights{},
 	}
 	config, err := core.ParseConfig("config.yml", ms)
 	if err != nil {

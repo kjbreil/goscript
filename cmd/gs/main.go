@@ -1,51 +1,30 @@
 package main
 
 import (
-	"fmt"
-	"github.com/goccy/go-yaml"
-	"os"
+	"path/filepath"
 )
 
 func main() {
-	config, err := parseConfig("config.yml")
+	runDir := "/Users/kjell/dev/goscript/run"
+	filename := "config.yml"
+
+	modules, err := parseConfig("config.yml")
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(len(config))
+	// err = setupProject(runDir, modules)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-}
-
-func parseConfig(filename string) (map[string]any, error) {
-	data, err := os.ReadFile(filename)
+	mainFile, err := genMain(filename, modules)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	var configMap map[string]any
-	err = yaml.Unmarshal(data, &configMap)
+
+	err = mainFile.Save(filepath.Join(runDir, "main.go"))
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-
-	modules := make(map[string]string)
-
-	for k, v := range configMap {
-		switch vv := v.(type) {
-		case map[string]any:
-			if r, ok := vv["repo"]; ok {
-				switch r.(type) {
-				case string:
-					modules[k] = r.(string)
-				default:
-					return nil, fmt.Errorf("repo for %s not string", k)
-				}
-
-			}
-
-		}
-	}
-
-	genMain(filename, modules)
-
-	return configMap, nil
 }

@@ -4,7 +4,7 @@ import "github.com/kjbreil/hass-ws/model"
 
 // GetAreaDomain returns a list of all entities in the specified area and domain.
 
-func (gs *GoScript) GetAreaDomain(area, domain string) []string {
+func (gs *Core) GetAreaDomain(area, domain string) []string {
 	var results []string
 
 	if a, ok := gs.areaRegistry[area]; ok {
@@ -18,7 +18,7 @@ func (gs *GoScript) GetAreaDomain(area, domain string) []string {
 	return results
 }
 
-func (gs *GoScript) fillAreaRegistry() {
+func (gs *Core) fillAreaRegistry() {
 	devices := make(map[string]string)
 	devs := gs.ws.GetDeviceRegistry()
 	for _, dev := range devs.Result {
