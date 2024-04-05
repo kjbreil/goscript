@@ -1,29 +1,17 @@
 package core
 
 import (
-	"fmt"
 	"github.com/kjbreil/goscript/pkg/device"
-	hassdevice "github.com/kjbreil/hass-mqtt/device"
 )
 
-func (gs *Core) AddDevice(dev *hassdevice.Device) (*device.Device, error) {
-	d := device.NewDevice(dev)
+func (gs *GoScript) AddDevice(dev *device.Device) error {
 
-	err := gs.mqtt.Add(dev)
+	err := gs.mqtt.Add(dev.Dev())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	gs.devices[dev.GetUniqueId()] = d
+	gs.devices[dev.Dev().GetUniqueId()] = dev
 
-	return d, nil
-}
-
-func (gs *Core) GetDevice(entity string) (*device.Device, error) {
-	d, ok := gs.devices[entity]
-	if !ok {
-		return nil, fmt.Errorf("could not find device %s", entity)
-	}
-
-	return d, nil
+	return nil
 }

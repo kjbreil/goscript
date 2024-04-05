@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/adhocore/gronx"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-logr/logr"
 	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/state"
@@ -33,6 +34,7 @@ func NewRunner(ctx context.Context, states *state.States, sChan service.Chan, lo
 		domainTrigger:   make(map[string]Triggers),
 		serviceTriggers: make(map[string]Triggers),
 		periodic:        make(map[string]Triggers),
+		taskToRun:       NewTaskMap(),
 		triggerRunning:  NewRunning(),
 		states:          states,
 		sChan:           sChan,
@@ -202,4 +204,15 @@ func fillNextTime(periodics map[string]Triggers) (time.Time, error) {
 		}
 	}
 	return next, nil
+}
+
+func (r *Runner) TaskMQTT(tr *Trigger) func(message mqtt.Message, client mqtt.Client) {
+	// setup the trigger
+	tr = SetupTrigger(tr)
+
+	return func(message mqtt.Message, client mqtt.Client) {
+		task := r.NewTask(tr, nil)
+		task.MqttMessage = message
+		r.AddTask(task)
+	}
 }

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/kjbreil/goscript/pkg/module"
 	"testing"
 	"time"
 )
@@ -21,9 +22,9 @@ func TestParseConfig(t *testing.T) {
 		TestArray []highLow
 	}
 
-	var modules Modules = make(map[string]interface{})
+	var m module.Modules = make(module.Modules)
 
-	modules["lights"] = &Lights{}
+	m["lights"] = &Lights{}
 
 	c, err := ParseConfig("config.yml", modules)
 	if err != nil {

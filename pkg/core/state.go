@@ -7,7 +7,7 @@ import (
 	"github.com/kjbreil/hass-ws/model"
 )
 
-func (gs *Core) handleGetStates(states []model.Result) {
+func (gs *GoScript) handleGetStates(states []model.Result) {
 	statesFuncToRun := make(map[uuid.UUID]*trigger.Task)
 
 	for _, sr := range states {
@@ -45,31 +45,14 @@ func (gs *Core) handleGetStates(states []model.Result) {
 			},
 		}
 
-		gs.TrigRunner.RunTriggers(*message)
+		gs.Runner.RunTriggers(*message)
 	}
 	for _, t := range statesFuncToRun {
-		gs.TrigRunner.AddTask(t)
+		gs.Runner.AddTask(t)
 	}
 }
 
-func (gs *Core) GetState(entityId string) *state.State {
-	s, _ := gs.states.Get(entityId)
-	return s
-}
-
-func (gs *Core) GetStates(domainentity []string) *state.States {
-	rtn := state.NewMultiStates(gs.states.Find(domainentity))
-
-	return &rtn
-}
-
-func (gs *Core) GetDomainStates(domainentity []string) *state.States {
-	rtn := state.NewMultiStates(gs.states.Find(domainentity))
-
-	return &rtn
-}
-
-func (gs *Core) handleMessage(message model.Message) {
+func (gs *GoScript) handleMessage(message model.Message) {
 	if message.Type == model.MessageTypeEvent {
 		switch message.Event.EventType {
 		case model.EventTypeStateChanged:
@@ -84,10 +67,10 @@ func (gs *Core) handleMessage(message model.Message) {
 
 			gs.states.Upsert(s)
 
-			gs.TrigRunner.RunTriggers(message)
+			gs.Runner.RunTriggers(message)
 		case model.EventTypeCallService:
 
-			gs.TrigRunner.RunServiceTriggers(message)
+			gs.Runner.RunServiceTriggers(message)
 		}
 	}
 }

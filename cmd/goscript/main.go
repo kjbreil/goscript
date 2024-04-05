@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/kjbreil/goscript/modules/motion"
+	"github.com/kjbreil/goscript/modules/lights"
+	"github.com/kjbreil/goscript/modules/virtual"
 	"github.com/kjbreil/goscript/pkg/core"
 	"github.com/kjbreil/goscript/pkg/module"
 	"os"
@@ -11,8 +12,8 @@ import (
 
 func main() {
 	ms := []module.Module{
-		&motion.Motion{},
-		// &lights.Lights{},
+		&lights.Lights{},
+		&virtual.Virtual{},
 	}
 	config, err := core.ParseConfig("config.yml", ms)
 	if err != nil {
@@ -24,7 +25,8 @@ func main() {
 		panic(err)
 	}
 
-	gs.UpdateModule("motion", core.GetModule[*motion.Motion](gs, "motion"))
+	gs.UpdateModule("lights", core.GetModule[*lights.Lights](gs, "lights"))
+	gs.UpdateModule("virtual", core.GetModule[*virtual.Virtual](gs, "virtual"))
 
 	err = gs.Connect()
 	if err != nil {

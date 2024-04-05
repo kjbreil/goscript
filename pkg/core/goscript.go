@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/funcr"
 	"github.com/kjbreil/goscript/pkg/device"
+	"github.com/kjbreil/goscript/pkg/message"
 	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/goscript/pkg/trigger"
@@ -17,37 +18,41 @@ import (
 	"time"
 )
 
-// Core is the base type for Core holding all the state and functionality for interacting with Home Assistant
-type Core struct {
+// GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
+type GoScript struct {
 	config *Config
 	mqtt   *hassmqtt.Client
 	ws     *hassws.Client
 
-	TrigRunner *trigger.Runner
+	Runner *trigger.Runner
 
-	devices map[string]*device.Device
+	devices device.Devices
 
 	areaRegistry map[string][]model.Result
 
-	// Context for the Core
+	// Context for the GoScript
 	ctx    context.Context
 	cancel context.CancelFunc
 
 	ServiceChan service.Chan
+
+	RequestChan message.RequestChan
+
 	// states store
 	states state.States
 
 	logger logr.Logger
 }
 
-// New creates a new Core instance
-func New(c *Config, logger logr.Logger) (*Core, error) {
+// New creates a new GoScript instance
+func New(c *Config, logger logr.Logger) (*GoScript, error) {
 	var err error
 
-	gs := &Core{
+	gs := &GoScript{
 		config: c,
 		logger: logger,
 	}
+	gs.ctx, gs.cancel = context.WithCancel(context.Background())
 
 	gs.mqtt, err = hassmqtt.NewClientWithLogger(*gs.config.MQTT, gs.logger)
 	if err != nil {
@@ -61,21 +66,32 @@ func New(c *Config, logger logr.Logger) (*Core, error) {
 	gs.ws.Logger()
 	gs.states = state.NewStates()
 
-	gs.TrigRunner = trigger.NewRunner(gs.ctx, &gs.states, gs.ServiceChan, gs.logger)
-
 	gs.ServiceChan = make(chan services.Service, 100)
 
-	gs.devices = make(map[string]*device.Device)
+	gs.Runner = trigger.NewRunner(gs.ctx, &gs.states, gs.ServiceChan, gs.logger)
+	gs.devices = make(device.Devices)
 
 	return gs, nil
 }
 
 // Connect connects to the WebSocket server and MQTT server as setup
 // all options need to be passed before firing connect, anything added after will have odd effects
-func (gs *Core) Connect() error {
+func (gs *GoScript) Connect() error {
 	var err error
 
-	gs.ctx, gs.cancel = context.WithCancel(context.Background())
+	// initialize the modules
+	for _, m := range gs.config.Modules {
+		err = m.Init(gs.ctx, gs.logger, gs.ServiceChan, gs.Runner, &gs.states, gs.ModuleMap())
+		if err != nil {
+			return err
+		}
+		for _, t := range m.Triggers() {
+			gs.Runner.AddTrigger(t)
+		}
+		for _, d := range m.Devices() {
+			err = gs.AddDevice(d)
+		}
+	}
 
 	if gs.mqtt != nil {
 		err = gs.mqtt.Connect()
@@ -112,19 +128,19 @@ func (gs *Core) Connect() error {
 	service.Run(gs.ctx, gs.ws, gs.logger, gs.ServiceChan)
 
 	// TODO: Change this into a RUN function passing the periodics
-	gs.TrigRunner.RunPeriodic()
+	gs.Runner.RunPeriodic()
 
-	gs.logger.Info("Core started")
+	gs.logger.Info("GoScript started")
 
 	return nil
 }
 
 // Logger returns the logr to create your own logs
-func (gs *Core) Logger() logr.Logger {
+func (gs *GoScript) Logger() logr.Logger {
 	return gs.logger
 }
 
-func (gs *Core) runFunctions() {
+func (gs *GoScript) runFunctions() {
 	defer func() {
 		gs.logger.Info("runFunctions exited")
 	}()
@@ -134,15 +150,18 @@ func (gs *Core) runFunctions() {
 		case <-gs.ctx.Done():
 			return
 		case <-timer.C:
-			for _, t := range gs.TrigRunner.TaskToRun() {
-				go gs.TrigRunner.RunTask(t)
+			for _, t := range gs.Runner.TaskToRun() {
+				go gs.Runner.RunTask(t)
 			}
 		}
 	}
 }
 
 // Close the connections to WebSocket and MQTT
-func (gs *Core) Close() {
+func (gs *GoScript) Close() {
+	for _, m := range gs.config.Modules {
+		m.Close()
+	}
 	gs.cancel()
 	err := gs.ws.Close()
 	gs.mqtt.Disconnect()
@@ -152,11 +171,11 @@ func (gs *Core) Close() {
 }
 
 // GetModule returns the config module in interface{} form, must be cast to module type
-func (gs *Core) GetModule(key string) (interface{}, error) {
+func (gs *GoScript) GetModule(key string) (interface{}, error) {
 	return gs.config.GetModule(key)
 }
 
-func GetModule[T any](gs *Core, key string) T {
+func GetModule[T any](gs *GoScript, key string) T {
 	if v, ok := gs.config.Modules[key]; ok {
 		return v.(T)
 	}

@@ -1,6 +1,6 @@
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/kjbreil/goscript)
 
-# Core
+# GoScript
 Something like PyScript for Home Assistant but in Go. Functionality is being added as needed for my automations but once I have finished what I need I will go through PyScript and backfill any missing functionality. There will be additions to what PyScript can like the ability to Add new devices to Home Assistant through MQTT.
 
 
@@ -12,7 +12,7 @@ websocket:
   port: 8123
   token: <super secret token>
 ```
-To allow Core to create Home Assistant devices MQTT is required. Node ID is presented to the MQTT server. If it is not unique within your MQTT server messages can get lost.
+To allow GoScript to create Home Assistant devices MQTT is required. Node ID is presented to the MQTT server. If it is not unique within your MQTT server messages can get lost.
 ```yaml
 mqtt:
   node_id: goscript
@@ -21,7 +21,7 @@ mqtt:
     port: 1883
     ssl: false # SSL Not Supported yet
 ```
-Use goscript.ParseConfig(path, modules) to parse configuration. The second parameter, modules, is a map[string]interface{} used to assign other configuration entries to custom structs. For example if I have a struct Lights
+Use goscript.ParseConfig(path, Modules) to parse configuration. The second parameter, Modules, is a map[string]interface{} used to assign other configuration entries to custom structs. For example if I have a struct Lights
 ```go
 type Lights struct {
     Name      string
@@ -38,11 +38,11 @@ lights:
 ```
 To fill in my Lights struct from the config file
 ```go
-modules := map[string]interface{
+Modules := map[string]interface{
 	"lights": &Lights{}
 }
 ```
-Then ParseConfig will fill in the struct properly and can get my config back from the Core.GetModule(key) method. Note that GetModule will return a interface, you will need to cast that back to your type.
+Then ParseConfig will fill in the struct properly and can get my config back from the GoScript.GetModule(key) method. Note that GetModule will return a interface, you will need to cast that back to your type.
 ```go
 inter, err := gs.GetModule(key)
 if err != nil {
@@ -66,7 +66,7 @@ Unique is an object that limits how the TriggerFunc runs. If just the blank obje
 ### Evaluation
 `Trigger.Evaluation` is a list of strings that are run through [expr](github.com/antonmedv/expr) to evaluate the output. Like with PyScript type is important in the evaluation scripts. Check out [expr](github.com/antonmedv/expr) for more details on casting and converting. You cannot mix types in a single evaluation so `state == "on" || state > 10` will always return false due to failure parsing the evaluation. Attributes are available inside the evaluations,`color_temp > 100` will work as long as color_temp exists in the attributes of the entity and the data type is a float
 ### TriggerFunc
-`Trigger.Func` is the function to run when the criteria are met. Within the trigger function a `*Task` is available to give information on the trigger. Killing the TriggerFunc panics to exit. The runner recovers this panic, this also means that if your code panics the whole program will not crash but will continue. Panic will be written to the logs.
+`Trigger.Func` is the function to run when the criteria are met. Within the trigger function a `*Task` is available to give information on the trigger. Killing the TriggerFunc panics to exit. The Runner recovers this panic, this also means that if your code panics the whole program will not crash but will continue. Panic will be written to the logs.
 
 ### Example
 This trigger will fire at program startup, every minute and every time input.button.test_button is pressed. It will flip input_boolean.test_toggle, wait 10 seconds and flip it back
@@ -90,7 +90,7 @@ Within each TriggerFunc a task object is available to get information from.
 
 `task.Message` contains the message that caused the trigger to fire.
 
-`task.States` contains all the States that were requested to be available by the trigger. Use `task.States.Get(string)` to retrieve objects. The states held within are pointers to the actual states in Core and are updated in real time.
+`task.States` contains all the States that were requested to be available by the trigger. Use `task.States.Get(string)` to retrieve objects. The States held within are pointers to the actual States in GoScript and are updated in real time.
 
 `task.Sleep(timeout)` will sleep for the specified duration.
 
@@ -99,9 +99,9 @@ Within each TriggerFunc a task object is available to get information from.
 `task.While(entityId, eval, whileFunc)` Runs the whileFunc until the eval is false. task.Sleep should be used within your whileFunc to delay otherwise whileFunc will be run very quickly.
 
 ## Services
-Core has a channel to put service calls onto. A set of default services to call is available in the [hass-ws](https://github.com/kjbreil/hass-ws) package however this is most likely not a complete list of services available in your Home Assistant installation since the service list is dynamic based on integrations installed. Generating your own service definitions is needed to interact properly with all your specific integrations.
+GoScript has a channel to put service calls onto. A set of default services to call is available in the [hass-ws](https://github.com/kjbreil/hass-ws) package however this is most likely not a complete list of services available in your Home Assistant installation since the service list is dynamic based on integrations installed. Generating your own service definitions is needed to interact properly with all your specific integrations.
 
-From your personal Core project directory run these commands to install the service generator and run it. You must have a config.yml with the websocket credentials defined. HassWSService will generate a folder called services and the files within, make sure you do not already have a folder named services in the root of your project.
+From your personal GoScript project directory run these commands to install the service generator and run it. You must have a config.yml with the websocket credentials defined. HassWSService will generate a folder called services and the files within, make sure you do not already have a folder named services in the root of your project.
 ```bash
 go install github.com/kjbreil/hass-ws/helpers/HassWSService@latest
 go install github.com/campoy/jsonenums@latest
@@ -121,7 +121,7 @@ gs.ServiceChan <- service
 ```
 
 ## Logging 
-goscript.New is passed the config and a logger if you want to use one using the [logr](github.com/go-logr/logr) interface. There is a default `goscript.DefaultLogger()` available which will just print the logs to the terminal.
+goscript.New is passed the config and a Logger if you want to use one using the [logr](github.com/go-logr/logr) interface. There is a default `goscript.DefaultLogger()` available which will just print the logs to the terminal.
 
 ## Example
 ```go

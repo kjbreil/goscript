@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (gs *Core) GetHistory(start, end time.Time, entities ...string) (history.Histories, error) {
+func (gs *GoScript) GetHistory(start, end time.Time, entities ...string) (history.Histories, error) {
 	hs, err := gs.ws.GetHistory(start, end, entities...)
 	if err != nil {
 		return nil, err

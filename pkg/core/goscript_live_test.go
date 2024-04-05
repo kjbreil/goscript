@@ -13,7 +13,7 @@ func TestTrigger(t *testing.T) {
 	var fns []TestFunc
 	wg := &sync.WaitGroup{}
 
-	fns = append(fns, func(gs *Core) error {
+	fns = append(fns, func(gs *GoScript) error {
 		var triggers []*trigger.Trigger
 
 		// testing periodic start right away

@@ -7,9 +7,9 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/kjbreil/goscript/pkg/eval"
+	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/hass-ws/model"
-	"github.com/kjbreil/hass-ws/services"
 	"time"
 )
 
@@ -22,7 +22,7 @@ type Task struct {
 	Message     *model.Message
 	MqttMessage mqtt.Message
 	States      state.States
-	ServiceChan chan services.Service
+	ServiceChan service.Chan
 	// task context
 	ctx    context.Context
 	cancel context.CancelFunc

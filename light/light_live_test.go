@@ -15,7 +15,7 @@ func TestLightsInDevice(t *testing.T) {
 	var postFns []core.TestFunc
 	wg := &sync.WaitGroup{}
 
-	preFns = append(preFns, func(gs *core.Core) error {
+	preFns = append(preFns, func(gs *core.GoScript) error {
 		device, err := gs.GetDevice("test_devices")
 		if err != nil {
 			return err
@@ -117,7 +117,7 @@ func TestLightsInDevice(t *testing.T) {
 		return nil
 	})
 
-	postFns = append(postFns, func(gs *core.Core) error {
+	postFns = append(postFns, func(gs *core.GoScript) error {
 		time.Sleep(5 * time.Minute)
 
 		return nil
