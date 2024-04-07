@@ -39,10 +39,11 @@ func (l *Lights) motion() trigger.Triggers {
 func (l *motionLight) trigger() *trigger.Trigger {
 	return &trigger.Trigger{
 		Triggers: l.Detectors,
-		Unique:   &trigger.Unique{},
-		States:   append(l.Entities, l.BlockIfOn...),
-		Eval:     eval.Eval(`state == "on"`),
-		Func:     l.turnOnLights,
+
+		Unique: &trigger.Unique{},
+		States: append(l.Entities, l.BlockIfOn...),
+		Eval:   eval.Eval(`state == "on"`),
+		Func:   l.turnOnLights,
 	}
 }
 

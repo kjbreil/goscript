@@ -25,7 +25,7 @@ func main() {
 		panic(err)
 	}
 
-	gs.UpdateModule("lights", core.GetModule[*lights.Lights](gs, "lights"))
+	// gs.UpdateModule("lights", core.GetModule[*lights.Lights](gs, "lights"))
 	gs.UpdateModule("virtual", core.GetModule[*virtual.Virtual](gs, "virtual"))
 
 	err = gs.Connect()

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/adhocore/gronx"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/go-logr/logr"
 	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/state"
+	"log/slog"
 	"time"
 )
 
@@ -24,11 +24,11 @@ type Runner struct {
 	taskToRun TaskMap
 	states    *state.States
 	sChan     service.Chan
-	logger    logr.Logger
+	logger    *slog.Logger
 	ctx       context.Context
 }
 
-func NewRunner(ctx context.Context, states *state.States, sChan service.Chan, logger logr.Logger) *Runner {
+func NewRunner(ctx context.Context, states *state.States, sChan service.Chan, logger *slog.Logger) *Runner {
 	return &Runner{
 		triggers:        make(map[string]Triggers),
 		domainTrigger:   make(map[string]Triggers),
@@ -74,7 +74,7 @@ func (r *Runner) RunPeriodic() {
 	// setup the next fire time for all triggers
 	r.nextPeriodic, err = fillNextTime(r.periodic)
 	if err != nil {
-		r.logger.Error(err, "NextTime")
+		r.logger.Error(err.Error(), "NextTime")
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -100,7 +100,7 @@ func (r *Runner) shouldRunTrigger() {
 				r.logger.Info("next time not set")
 				_, err := t.NextTime(time.Now())
 				if err != nil {
-					r.logger.Error(err, "setting next time failed")
+					r.logger.Error(err.Error(), "setting next time failed")
 					continue
 				}
 			}
@@ -110,7 +110,7 @@ func (r *Runner) shouldRunTrigger() {
 
 				_, err := t.NextTime(time.Now())
 				if err != nil {
-					r.logger.Error(err, "setting next time failed")
+					r.logger.Error(err.Error(), "setting next time failed")
 					continue
 				}
 			}
@@ -132,7 +132,7 @@ func (r *Runner) runGronJob(gron *gronx.Gronx, start bool) {
 		} else {
 			due, err = gron.IsDue(expr)
 			if err != nil {
-				r.logger.Error(err, "gron job IsDue failed")
+				r.logger.Error(err.Error(), "gron job IsDue failed")
 				continue
 			}
 		}
@@ -160,7 +160,7 @@ func (r *Runner) RunTask(t *Task) {
 		t.SetRunning(false)
 		t.Cancel()
 		if re := recover(); re != nil {
-			r.logger.Info(fmt.Sprintf("task exited: %v", r))
+			r.logger.Info(fmt.Sprintf("task exited: %v", re))
 		}
 	}()
 

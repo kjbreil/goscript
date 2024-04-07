@@ -20,15 +20,7 @@ type Virtual struct {
 	module.Base
 }
 
-type lights struct{}
-type binarySensor struct {
-}
-
-func (v *Virtual) Triggers() trigger.Triggers {
-	return nil
-}
-
-func (v *Virtual) Devices() device.Devices {
+func (v *Virtual) Run() error {
 	devices := make(device.Devices)
 	for n := range v.Lights {
 		snakeName := strcase.ToSnake(n)
@@ -63,7 +55,17 @@ func (v *Virtual) Devices() device.Devices {
 		}()
 		devices[dev.GetUniqueId()] = gd
 	}
-	return devices
+	module.SendDevices(v, devices)
+
+	return nil
+}
+
+type lights struct{}
+type binarySensor struct {
+}
+
+func (v *Virtual) Triggers() trigger.Triggers {
+	return nil
 }
 
 func (v *Virtual) Update() error {

@@ -3,11 +3,9 @@ package core
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/go-logr/logr"
-	"github.com/go-logr/logr/funcr"
 	"github.com/kjbreil/goscript/pkg/device"
-	"github.com/kjbreil/goscript/pkg/message"
+	"github.com/kjbreil/goscript/pkg/logger"
+	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/goscript/pkg/trigger"
@@ -15,6 +13,8 @@ import (
 	hassws "github.com/kjbreil/hass-ws"
 	"github.com/kjbreil/hass-ws/model"
 	"github.com/kjbreil/hass-ws/services"
+	"log/slog"
+	"os"
 	"time"
 )
 
@@ -36,21 +36,22 @@ type GoScript struct {
 
 	ServiceChan service.Chan
 
-	RequestChan message.RequestChan
+	requests *module.Requests
 
 	// states store
 	states state.States
 
-	logger logr.Logger
+	logger *slog.Logger
 }
 
 // New creates a new GoScript instance
-func New(c *Config, logger logr.Logger) (*GoScript, error) {
+func New(c *Config, logger *slog.Logger) (*GoScript, error) {
 	var err error
 
 	gs := &GoScript{
-		config: c,
-		logger: logger,
+		config:   c,
+		logger:   logger,
+		requests: module.NewRequests(),
 	}
 	gs.ctx, gs.cancel = context.WithCancel(context.Background())
 
@@ -79,18 +80,21 @@ func New(c *Config, logger logr.Logger) (*GoScript, error) {
 func (gs *GoScript) Connect() error {
 	var err error
 
+	// start the message handler
+	gs.messageHandler()
+
 	// initialize the modules
 	for _, m := range gs.config.Modules {
-		err = m.Init(gs.ctx, gs.logger, gs.ServiceChan, gs.Runner, &gs.states, gs.ModuleMap())
+		err = m.Init(gs.ctx, gs.requests)
 		if err != nil {
 			return err
 		}
-		for _, t := range m.Triggers() {
-			gs.Runner.AddTrigger(t)
-		}
-		for _, d := range m.Devices() {
-			err = gs.AddDevice(d)
-		}
+		// for _, t := range m.Triggers() {
+		// 	gs.Runner.AddTrigger(t)
+		// }
+		// for _, d := range m.Devices() {
+		// 	err = gs.AddDevice(d)
+		// }
 	}
 
 	if gs.mqtt != nil {
@@ -103,11 +107,18 @@ func (gs *GoScript) Connect() error {
 		gs.logger.Info("MQTT connected")
 	}
 
+	for _, m := range gs.config.Modules {
+		err = m.Run()
+		if err != nil {
+			return err
+		}
+	}
+
 	// Add a subscription for the websocket on all events
 	gs.ws.AddSubscription(model.EventTypeAll)
 
 	// Handle all messages
-	gs.ws.OnMessage = gs.handleMessage
+	gs.ws.OnMessage = gs.handleHassMessage
 	// handle running get States
 	gs.ws.OnGetState = gs.handleGetStates
 	// setup hass_ws to initialize all States at connect. This is run through the triggers.
@@ -136,7 +147,7 @@ func (gs *GoScript) Connect() error {
 }
 
 // Logger returns the logr to create your own logs
-func (gs *GoScript) Logger() logr.Logger {
+func (gs *GoScript) Logger() *slog.Logger {
 	return gs.logger
 }
 
@@ -166,7 +177,7 @@ func (gs *GoScript) Close() {
 	err := gs.ws.Close()
 	gs.mqtt.Disconnect()
 	if err != nil {
-		gs.logger.Error(err, "error closing websocket")
+		gs.logger.Error(err.Error(), "error closing websocket")
 	}
 }
 
@@ -182,13 +193,11 @@ func GetModule[T any](gs *GoScript, key string) T {
 	panic(ErrModuleNotFound)
 }
 
-func DefaultLogger() logr.Logger {
-	log := funcr.New(
-		func(pfx, args string) { fmt.Println(pfx, args) },
-		funcr.Options{
-			LogCaller:    funcr.None,
-			LogTimestamp: true,
-			Verbosity:    1,
-		})
-	return log.WithName("goscript")
+func DefaultLogger() *slog.Logger {
+	// return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	// 	AddSource: true,
+	// }))
+
+	return slog.New(logger.NewHandler(os.Stdout, nil))
+
 }

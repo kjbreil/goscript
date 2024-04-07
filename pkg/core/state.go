@@ -52,7 +52,7 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 	}
 }
 
-func (gs *GoScript) handleMessage(message model.Message) {
+func (gs *GoScript) handleHassMessage(message model.Message) {
 	if message.Type == model.MessageTypeEvent {
 		switch message.Event.EventType {
 		case model.EventTypeStateChanged:

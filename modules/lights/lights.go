@@ -1,13 +1,11 @@
 package lights
 
 import (
-	"context"
 	"github.com/go-logr/logr"
 	"github.com/kjbreil/goscript/modules/circadian"
 	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/service"
-	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/goscript/pkg/trigger"
 )
 
@@ -21,10 +19,23 @@ type Lights struct {
 	module.Base
 }
 
-func (l *Lights) Init(ctx context.Context, logger logr.Logger, sChan service.Chan, runner *trigger.Runner, states *state.States, modules *module.Modules) error {
-	l.AssignBase(ctx, logger, sChan, runner, states, modules)
+func (l *Lights) Run() error {
+	module.SendTriggers(l, l.motion())
+
+	l.Requests().Chan() <- module.Request{
+		To:      "goscript",
+		From:    key,
+		Trigger: nil,
+		Device:  nil,
+		Module:  "virtual",
+	}
+
+	module.SendInfo(l, "test message")
 
 	return nil
+}
+func (l *Lights) Responses(rsp module.Response) {
+
 }
 
 func (l *Lights) Close() error {
