@@ -1,7 +1,10 @@
 package core
 
 import (
+	"fmt"
+	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/module"
+	"github.com/kjbreil/hass-mqtt/common"
 )
 
 func (gs *GoScript) messageHandler() {
@@ -25,7 +28,12 @@ func (gs *GoScript) messageHandler() {
 
 }
 
-func (gs *GoScript) handleMessage(m module.Request) error {
+func (gs *GoScript) handleMessage(m control.Request) error {
+	// create the response object to use in the callback
+	rsp := control.Response{
+		To:   m.From,
+		From: "goscript",
+	}
 
 	if m.Device != nil {
 		err := gs.AddDevice(m.Device)
@@ -38,9 +46,9 @@ func (gs *GoScript) handleMessage(m module.Request) error {
 		gs.Runner.AddTrigger(m.Trigger)
 	}
 
-	if m.TaskTrigger != nil && m.Message != nil {
+	if m.TaskTrigger != nil && m.MQTTMessage != nil {
 		task := gs.Runner.NewTask(m.TaskTrigger, nil)
-		task.MqttMessage = *m.Message
+		task.MqttMessage = *m.MQTTMessage
 		gs.Runner.AddTask(task)
 	}
 
@@ -48,29 +56,46 @@ func (gs *GoScript) handleMessage(m module.Request) error {
 		gs.ServiceChan <- *m.Service
 	}
 
-	if m.Log != nil {
-		if m.Log.Err != nil {
-			gs.Logger().Error(m.Log.Msg, "error", m.Log.Err, "caller", m.Log.Caller)
-		} else {
-			gs.Logger().Info(m.Log.Msg, "caller", m.Log.Caller)
+	if m.MQTTPublish != nil {
+		token := gs.mqtt.Publish(m.MQTTPublish.Topic, m.MQTTPublish.QoS, m.MQTTPublish.Retained, m.MQTTPublish.Payload)
+
+		token.WaitTimeout(common.WaitTimeout)
+
+		if token.Error() != nil {
+			return token.Error()
 		}
 	}
 
-	if m.Module != "" {
-		if c, ok := gs.config.Modules.Get(m.Module); ok {
+	if m.Log != nil {
+		msg := fmt.Sprintf("(%s) %s", m.From, m.Log.Msg)
 
-			gs.sendResponse(module.Response{
-				To:     m.From,
-				From:   "goscript",
-				Module: c,
-			})
+		if m.Log.Err != nil {
+			gs.Logger().Error(msg, "error", m.Log.Err, "caller", m.Log.Caller)
+		} else {
+			gs.Logger().Info(msg, "caller", m.Log.Caller)
+		}
+	}
+
+	if m.Module != nil {
+		switch mod := m.Module.(type) {
+		case module.Module:
+			if c, ok := gs.config.Modules.Get(mod.Name()); ok {
+				rsp.Module = c
+			}
+		}
+	}
+
+	if m.Callback != nil {
+		err := m.Callback(rsp)
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (gs *GoScript) sendResponse(rsp module.Response) {
+func (gs *GoScript) sendResponse(rsp control.Response) {
 	if mod, ok := gs.config.Modules.Get(rsp.To); ok {
 		mod.Responses(rsp)
 	}

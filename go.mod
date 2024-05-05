@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/adhocore/gronx v1.6.6
 	github.com/antonmedv/expr v1.15.3
+	github.com/dave/jennifer v1.7.0
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-logr/logr v1.3.0
 	github.com/goccy/go-yaml v1.11.2
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	github.com/dave/jennifer v1.7.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/go-playground/validator/v10 v10.16.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect

@@ -16,6 +16,12 @@ type History struct {
 	States       []*state.State
 }
 
+type GetHistories struct {
+	Start    time.Time
+	End      time.Time
+	Entities []string
+}
+
 func (hs *Histories) Get(domain, entity string) *History {
 	for _, h := range *hs {
 		if h.Entity == entity && h.Domain == domain {

@@ -2,13 +2,16 @@ package module
 
 import (
 	"context"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/kjbreil/goscript/pkg/control"
+	"github.com/kjbreil/goscript/pkg/trigger"
 )
 
 type Module interface {
 	// Init brings in data streams that might be needed and returns the triggers the module provides
-	Init(ctx context.Context, requests *Requests) error
-	Responses(rsp Response)
-	Requests() *Requests
+	Init(ctx context.Context, requests *control.Requests) error
+	Responses(rsp control.Response)
+	Requests() *control.Requests
 	Run() error
 	Update() error
 	Name() string
@@ -19,24 +22,39 @@ type Module interface {
 
 type Base struct {
 	Ctx      context.Context
-	requests *Requests
+	requests *control.Requests
 }
 
 func (m *Base) mustImplementBase() {}
 
-func (m *Base) Init(ctx context.Context, requests *Requests) error {
+func (m *Base) Init(ctx context.Context, requests *control.Requests) error {
 	m.AssignBase(ctx, requests)
 
 	return nil
 }
 
-func (m *Base) AssignBase(ctx context.Context, requests *Requests) {
+func (m *Base) AssignBase(ctx context.Context, requests *control.Requests) {
 	m.Ctx = ctx
 	m.requests = requests
 }
 
-func (m *Base) Responses(_ Response) {
+func (m *Base) Responses(_ control.Response) {
+
 }
-func (m *Base) Requests() *Requests {
+func (m *Base) Requests() *control.Requests {
 	return m.requests
+}
+
+func TaskMQTT(m Module, tr *trigger.Trigger) func(message mqtt.Message, client mqtt.Client) {
+	// setup the trigger
+	tr = trigger.SetupTrigger(tr)
+
+	return func(message mqtt.Message, _ mqtt.Client) {
+		m.Requests().Chan() <- control.Request{
+			To:          "goscript",
+			From:        m.Name(),
+			TaskTrigger: tr,
+			MQTTMessage: &message,
+		}
+	}
 }

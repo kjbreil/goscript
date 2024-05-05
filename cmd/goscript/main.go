@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/kjbreil/goscript/modules/circadian"
 	"github.com/kjbreil/goscript/modules/lights"
 	"github.com/kjbreil/goscript/modules/virtual"
 	"github.com/kjbreil/goscript/pkg/core"
@@ -14,6 +15,7 @@ func main() {
 	ms := []module.Module{
 		&lights.Lights{},
 		&virtual.Virtual{},
+		&circadian.Circadian{},
 	}
 	config, err := core.ParseConfig("config.yml", ms)
 	if err != nil {
@@ -25,8 +27,9 @@ func main() {
 		panic(err)
 	}
 
-	// gs.UpdateModule("lights", core.GetModule[*lights.Lights](gs, "lights"))
+	gs.UpdateModule("lights", core.GetModule[*lights.Lights](gs, "lights"))
 	gs.UpdateModule("virtual", core.GetModule[*virtual.Virtual](gs, "virtual"))
+	gs.UpdateModule("circadian", core.GetModule[*circadian.Circadian](gs, "circadian"))
 
 	err = gs.Connect()
 	if err != nil {

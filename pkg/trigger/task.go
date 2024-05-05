@@ -23,6 +23,8 @@ type Task struct {
 	MqttMessage mqtt.Message
 	States      state.States
 	ServiceChan service.Chan
+	// requests    *control.Requests
+
 	// task context
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -80,11 +82,25 @@ func (t *Task) Running() bool {
 	return *t.running
 }
 
-func (t *Task) SetRunning(running bool) {
+func (t *Task) SetRunning(running *bool) {
+
+	t.running = running
+}
+
+func (t *Task) SetRunningTrue() {
 	if t.running == nil {
 		t.running = new(bool)
 	}
-	t.running = &running
+
+	*t.running = true
+}
+
+func (t *Task) SetRunningFalse() {
+	if t.running == nil {
+		t.running = new(bool)
+	}
+
+	*t.running = false
 }
 func (t *Task) CtxDone() <-chan struct{} {
 	return t.ctx.Done()
@@ -169,4 +185,8 @@ func (t *Task) While(entityID string, ev []string, whileFunc WhileFunc) {
 
 func (t *Task) Cancelled() bool {
 	return errors.Is(t.ctx.Err(), context.Canceled)
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }

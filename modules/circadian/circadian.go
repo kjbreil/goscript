@@ -1,14 +1,17 @@
 package circadian
 
 import (
+	"fmt"
 	"github.com/kjbreil/goscript/light"
-	"github.com/kjbreil/goscript/pkg/core"
-	"github.com/kjbreil/goscript/pkg/service"
+	"github.com/kjbreil/goscript/pkg/device"
+	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/sixdouglas/suncalc"
 	"math"
 	"time"
 )
+
+var key = "circadian"
 
 type Circadian struct {
 	Lat              float64
@@ -18,12 +21,41 @@ type Circadian struct {
 	MinBrightnessPct float64
 	MaxBrightnessPct float64
 
-	transition float64
+	Transition float64
 
 	currentTemperature   float64
 	currentBrightnessPct float64
 
-	service service.Chan
+	module.Base
+}
+
+func (c *Circadian) Run() error {
+	if c.Lat == 0 && c.Long == 0 {
+		return fmt.Errorf("circadian requires lat and long")
+	}
+	return nil
+}
+
+func (c *Circadian) Triggers() trigger.Triggers {
+	return nil
+
+}
+
+func (c *Circadian) Devices() device.Devices {
+	return nil
+}
+
+func (c *Circadian) Update() error {
+	return nil
+}
+
+func (c *Circadian) Name() string {
+	return key
+}
+
+func (c *Circadian) Close() error {
+	return nil
+
 }
 
 func (c *Circadian) ChangeEnough(temperature, brightness float64) bool {
@@ -33,11 +65,6 @@ func (c *Circadian) ChangeEnough(temperature, brightness float64) bool {
 	return math.Abs(temperature-c.currentTemperature) <= temperatureStepSize &&
 		math.Abs(brightness-c.currentBrightnessPct) <= brightnessStepSize
 
-}
-
-func (c *Circadian) AddGoscript(gs *core.GoScript) {
-	c.service = gs.ServiceChan
-	c.transition = 0.5
 }
 
 func (c *Circadian) Calculate() (float64, float64) {
@@ -67,9 +94,6 @@ func (c *Circadian) Temperature() float64 {
 func (c *Circadian) BrightnessPct() float64 {
 	return c.currentBrightnessPct
 }
-func (c *Circadian) Transition() float64 {
-	return c.transition
-}
 
 func (c *Circadian) TurnOn(t *trigger.Task, entities ...string) {
 	if len(entities) == 0 {
@@ -80,7 +104,7 @@ func (c *Circadian) TurnOn(t *trigger.Task, entities ...string) {
 	light.New().
 		ColorTemp(c.Temperature()).
 		BrightnessPct(c.BrightnessPct()).
-		Transition(c.Transition()).
+		Transition(c.Transition).
 		TurnOn(t, entities)
 
 }
@@ -93,7 +117,7 @@ func (c *Circadian) TurnOnTemperature(t *trigger.Task, entities ...string) {
 
 	light.New().
 		ColorTemp(c.Temperature()).
-		Transition(c.Transition()).
+		Transition(c.Transition).
 		TurnOn(t, entities)
 }
 
@@ -106,12 +130,12 @@ func (c *Circadian) TurnOnTemperatureManualBrightness(t *trigger.Task, brightnes
 	light.New().
 		ColorTemp(c.Temperature()).
 		BrightnessPct(brightness).
-		Transition(c.Transition()).
+		Transition(c.Transition).
 		TurnOn(t, entities)
 }
 
 func (c *Circadian) TurnOff(t *trigger.Task, entities ...string) {
-	light.New().Transition(c.transition).TurnOff(t, entities)
+	light.New().Transition(c.Transition).TurnOff(t, entities)
 }
 
 func mapRange(rangeLow, rangeHigh, mapLow, mapHigh, value float64) float64 {

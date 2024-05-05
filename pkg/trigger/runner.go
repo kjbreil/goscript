@@ -146,25 +146,27 @@ func (r *Runner) runGronJob(gron *gronx.Gronx, start bool) {
 }
 
 func (r *Runner) RunTask(t *Task) {
+	r.logger.Debug(fmt.Sprintf("task started: %s", t.UUID()), "messageEntity", t.Message.DomainEntity())
+
 	for t.Running() {
 		timer := time.NewTimer(100)
 		select {
 		case <-timer.C:
 		case <-t.CtxDone():
-			r.logger.Info(fmt.Sprintf("task %s exited awaiting to run", t.UUID()))
+			r.logger.Debug(fmt.Sprintf("task %s exited awaiting to run", t.UUID()))
 			return
 		}
 	}
 
 	defer func() {
-		t.SetRunning(false)
+		t.SetRunningFalse()
 		t.Cancel()
 		if re := recover(); re != nil {
-			r.logger.Info(fmt.Sprintf("task exited: %v", re))
+			r.logger.Debug(fmt.Sprintf("task exited: %v", re))
 		}
 	}()
 
-	t.SetRunning(true)
+	t.SetRunningTrue()
 
 	go r.taskWaitRequest(t)
 	t.F()(t)

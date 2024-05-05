@@ -21,11 +21,15 @@ type Unique struct {
 	cancel  context.CancelFunc
 }
 
-func (u *Unique) Running() bool {
+func (u *Unique) Running() *bool {
 	if u.running == nil {
-		return false
+		return ptr(false)
 	}
-	return *u.running
+	return u.running
+}
+
+func (u *Unique) SetRunning(running bool) {
+	u.running = &running
 }
 
 func (u *Unique) NewCtx(ctx context.Context) (context.Context, context.CancelFunc) {

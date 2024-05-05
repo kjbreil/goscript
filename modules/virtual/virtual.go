@@ -30,7 +30,7 @@ func (v *Virtual) Run() error {
 		lightOptions := entities.NewLightOptions().Name(readableName)
 		light, _ := entities.NewLight(lightOptions)
 		dev.Add(light)
-		gd := device.NewDevice(dev)
+		gd := device.NewGSDevice(dev)
 		devices[dev.GetUniqueId()] = gd
 
 	}
@@ -44,7 +44,7 @@ func (v *Virtual) Run() error {
 		bs, _ := entities.NewBinarySensor(binarySensorOptions)
 
 		dev.Add(bs)
-		gd := device.NewDevice(dev)
+		gd := device.NewGSDevice(dev)
 		go func() {
 			for {
 				time.Sleep(10 * time.Second)

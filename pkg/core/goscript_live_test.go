@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/periodic"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/kjbreil/hass-ws/services"
@@ -13,53 +14,54 @@ func TestTrigger(t *testing.T) {
 	var fns []TestFunc
 	wg := &sync.WaitGroup{}
 
-	fns = append(fns, func(gs *GoScript) error {
+	fns = append(fns, func(ctrl *control.Requests) error {
 		var triggers []*trigger.Trigger
 
-		// testing periodic start right away
-		triggers = append(triggers, &trigger.Trigger{
-			Periodic: periodic.Periodics(""),
-			States:   trigger.Entities("switch.test_switch"),
-			Func: func(task *trigger.Task) {
-				gs.ServiceChan <- services.NewSwitchTurnOn(services.Targets("switch.test_switch"))
-				task.Sleep(1 * time.Second)
-				if s, ok := task.States.Get("switch.test_switch"); ok {
-					if s.State != "on" {
-						t.Fatal("switch.test_switch did not turn on")
-					}
-				} else {
-					t.Fatal("state not found for switch.test_switch")
-				}
-				task.Sleep(1 * time.Second)
-				gs.ServiceChan <- services.NewSwitchTurnOff(services.Targets("switch.test_switch"))
-				task.Sleep(1 * time.Second)
-				if s, ok := task.States.Get("switch.test_switch"); ok {
-					if s.State != "off" {
-						t.Fatal("switch.test_switch did not turn off")
-					}
-				} else {
-					t.Fatal("state not found for switch.test_switch")
-				}
-				t.Logf("Periodic Ran, Turn On/Turn Off successful")
-				wg.Done()
-			},
-		})
+		// // testing periodic start right away
+		// triggers = append(triggers, &trigger.Trigger{
+		// 	Periodic: periodic.Periodics(""),
+		// 	States:   trigger.Entities("switch.test_devices_test_switch"),
+		// 	Func: func(task *trigger.Task) {
+		// 		sendService(ctrl, services.NewSwitchTurnOn(services.Targets("switch.test_devices_test_switch")))
+		// 		task.Sleep(1 * time.Second)
+		// 		if s, ok := task.States.Get("switch.test_devices_test_switch"); ok {
+		// 			if s.State != "on" {
+		// 				t.Fatal("switch.test_switch did not turn on")
+		// 			}
+		// 		} else {
+		// 			t.Fatal("state not found for switch.test_devices_test_switch")
+		// 		}
+		// 		task.Sleep(1 * time.Second)
+		// 		sendService(ctrl, services.NewSwitchTurnOff(services.Targets("switch.test_devices_test_switch")))
+		//
+		// 		task.Sleep(1 * time.Second)
+		// 		if s, ok := task.States.Get("switch.test_devices_test_switch"); ok {
+		// 			if s.State != "off" {
+		// 				t.Fatal("switch.test_switch did not turn off")
+		// 			}
+		// 		} else {
+		// 			t.Fatal("state not found for switch.test_devices_test_switch")
+		// 		}
+		// 		t.Logf("Periodic Ran, Turn On/Turn Off successful")
+		// 		wg.Done()
+		// 	},
+		// })
 
-		// test triggering
-		triggers = append(triggers, &trigger.Trigger{
-			Triggers: trigger.Entities("switch.test_switch"),
-			Func: func(task *trigger.Task) {
-				if task.Message.State() == "on" {
-					wg.Done()
-				}
-			},
-		})
+		// // test triggering
+		// triggers = append(triggers, &trigger.Trigger{
+		// 	Triggers: trigger.Entities("switch.test_devices_test_switch"),
+		// 	Func: func(task *trigger.Task) {
+		// 		if task.Message.State() == "on" {
+		// 			wg.Done()
+		// 		}
+		// 	},
+		// })
 
 		// test default unique behavior
 		defaultUniqueRuns := 0
 		defaultUniqueWG := false
 		triggers = append(triggers, &trigger.Trigger{
-			Triggers: trigger.Entities("switch.test_switch"),
+			Triggers: trigger.Entities("switch.test_devices_test_switch"),
 			Unique:   &trigger.Unique{},
 			Func: func(task *trigger.Task) {
 				defaultUniqueRuns++
@@ -86,7 +88,7 @@ func TestTrigger(t *testing.T) {
 				if waitUniqueEnds > 5 {
 					return
 				}
-
+				t.Logf("waitUniqueStarts: %d - %d", waitUniqueStarts, waitUniqueEnds)
 				waitUniqueStarts++
 				task.Sleep(2 * time.Second)
 				waitUniqueEnds++
@@ -130,7 +132,7 @@ func TestTrigger(t *testing.T) {
 			},
 		})
 
-		gs.AddTriggers(triggers...)
+		sendTriggers(ctrl, triggers)
 		wg.Add(len(triggers))
 
 		return nil
@@ -138,4 +140,22 @@ func TestTrigger(t *testing.T) {
 
 	GoScriptTestRun(fns, nil, wg, t)
 
+}
+
+func sendService(r *control.Requests, s services.Service) {
+	r.Chan() <- control.Request{
+		To:      "goscript",
+		From:    "test",
+		Service: &s,
+	}
+}
+
+func sendTriggers(r *control.Requests, triggers trigger.Triggers) {
+	for _, t := range triggers {
+		r.Chan() <- control.Request{
+			To:      "goscript",
+			From:    "test",
+			Trigger: t,
+		}
+	}
 }

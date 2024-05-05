@@ -113,7 +113,7 @@ func (r *Runner) NewTask(tr *Trigger, message *model.Message) *Task {
 			return t
 		}
 	} else {
-		task.SetRunning(false)
+		task.SetRunningFalse()
 		task.NewCtx(r.ctx)
 		task.NewUUID()
 	}
@@ -124,11 +124,14 @@ func (r *Runner) NewTask(tr *Trigger, message *model.Message) *Task {
 func (r *Runner) MakeUniqueTask(tr *Trigger, task *Task) (*Task, bool) {
 	// KillMe checks if the task is running and exits rather than kill off the other task
 	if tr.Unique.KillMe {
-		if tr.Unique.Running() {
+		if *tr.Unique.Running() {
 			r.logger.Info(fmt.Sprintf("task %s tried to start but other task running and KillMe is true", tr.UUID()))
 			return nil, true
 		}
 	}
+	// else {
+	//
+	// }
 
 	// non wait tasks (default) cancel the current context
 	if !tr.Unique.Wait {
@@ -143,9 +146,10 @@ func (r *Runner) MakeUniqueTask(tr *Trigger, task *Task) (*Task, bool) {
 	// TODO: This needs to be moved up, right now Unique.UUID only working for Wait = true
 	if tr.Unique.UUID != nil {
 		task.NewUUID()
-		task.SetRunning(*r.triggerRunning.Get(*tr.Unique.UUID))
+		task.SetRunning(r.triggerRunning.Get(*tr.Unique.UUID))
 	} else {
-		task.NewUUID()
+		// task.NewUUID()
+		task.uuid = tr.uuid
 	}
 	return nil, false
 }

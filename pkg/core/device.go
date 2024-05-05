@@ -4,7 +4,7 @@ import (
 	"github.com/kjbreil/goscript/pkg/device"
 )
 
-func (gs *GoScript) AddDevice(dev *device.Device) error {
+func (gs *GoScript) AddDevice(dev *device.GSDevice) error {
 
 	err := gs.mqtt.Add(dev.Dev())
 	if err != nil {

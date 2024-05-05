@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/logger"
 	"github.com/kjbreil/goscript/pkg/module"
@@ -36,7 +38,7 @@ type GoScript struct {
 
 	ServiceChan service.Chan
 
-	requests *module.Requests
+	requests *control.Requests
 
 	// states store
 	states state.States
@@ -51,7 +53,7 @@ func New(c *Config, logger *slog.Logger) (*GoScript, error) {
 	gs := &GoScript{
 		config:   c,
 		logger:   logger,
-		requests: module.NewRequests(),
+		requests: control.NewRequests(),
 	}
 	gs.ctx, gs.cancel = context.WithCancel(context.Background())
 
@@ -80,9 +82,6 @@ func New(c *Config, logger *slog.Logger) (*GoScript, error) {
 func (gs *GoScript) Connect() error {
 	var err error
 
-	// start the message handler
-	gs.messageHandler()
-
 	// initialize the modules
 	for _, m := range gs.config.Modules {
 		err = m.Init(gs.ctx, gs.requests)
@@ -107,12 +106,31 @@ func (gs *GoScript) Connect() error {
 		gs.logger.Info("MQTT connected")
 	}
 
-	for _, m := range gs.config.Modules {
-		err = m.Run()
-		if err != nil {
-			return err
+	for moduleName := range gs.config.Modules {
+		if m, ok := gs.config.Modules[moduleName]; ok {
+			go func(moduleName string, m module.Module) {
+				err := m.Run()
+				if err != nil {
+					gs.logger.Error(fmt.Sprintf("could not run module %s", moduleName), "error", err.Error())
+				} else {
+					gs.logger.Info(fmt.Sprintf("module %s running", moduleName))
+				}
+			}(moduleName, m)
 		}
+
 	}
+
+	// for moduleName, m := range gs.config.Modules {
+	// 	err = m.Run()
+	// 	if err != nil {
+	// 		gs.logger.Error(fmt.Sprintf("could not run module %s", moduleName), "error", err.Error())
+	// 	} else {
+	// 		gs.logger.Info(fmt.Sprintf("module %s running", moduleName))
+	// 	}
+	// }
+
+	// start the message handler. This starts after all the modules have been initialized and run
+	gs.messageHandler()
 
 	// Add a subscription for the websocket on all events
 	gs.ws.AddSubscription(model.EventTypeAll)
@@ -177,7 +195,7 @@ func (gs *GoScript) Close() {
 	err := gs.ws.Close()
 	gs.mqtt.Disconnect()
 	if err != nil {
-		gs.logger.Error(err.Error(), "error closing websocket")
+		gs.logger.Error("error closing websocket", "error", err.Error())
 	}
 }
 

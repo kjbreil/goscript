@@ -3,6 +3,7 @@ package helpers
 import (
 	"fmt"
 	"github.com/adhocore/gronx"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -135,11 +136,24 @@ type cronNextTick struct {
 	t    time.Time
 }
 
+func CleanExpressions(expressions []string) ([]string, bool) {
+	for i := range expressions {
+		if expressions[i] == "" {
+			return slices.Delete(expressions, i, i+1), false
+		}
+	}
+
+	return expressions, true
+}
+
 func SortCronJobs(expressions []string) []string {
+	expressions, _ = CleanExpressions(expressions)
+
 	zeroDay := time.Date(1, 1, 1, 0, 0, 0, 0, time.Local)
 	nextTicks := make([]cronNextTick, len(expressions))
 
 	for i := range expressions {
+
 		tickTime, err := gronx.NextTickAfter(expressions[i], zeroDay, true)
 		if err != nil {
 			panic(err)
