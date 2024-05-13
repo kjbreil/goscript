@@ -36,6 +36,7 @@ type Request struct {
 	Device      *device.GSDevice
 	Service     *services.Service
 	History     *history.GetHistories
+	GetStates   []string
 
 	Callback func(rsp Response) error
 

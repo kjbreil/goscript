@@ -56,6 +56,11 @@ func (gs *GoScript) handleMessage(m control.Request) error {
 		gs.ServiceChan <- *m.Service
 	}
 
+	if m.GetStates != nil {
+		states := gs.states.SubSet(m.GetStates)
+		rsp.States = &states
+	}
+
 	if m.MQTTPublish != nil {
 		token := gs.mqtt.Publish(m.MQTTPublish.Topic, m.MQTTPublish.QoS, m.MQTTPublish.Retained, m.MQTTPublish.Payload)
 

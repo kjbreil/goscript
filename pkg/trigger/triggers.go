@@ -50,6 +50,7 @@ func (r *Runner) AddTriggers(triggers ...*Trigger) {
 }
 
 func (r *Runner) RunTriggers(message model.Message) {
+	// TODO: Race condition concurrent read/write
 	if tr, ok := r.triggers[message.DomainEntity()]; ok {
 		for _, trr := range tr {
 			r.triggerDomainEntity(&message, trr)
