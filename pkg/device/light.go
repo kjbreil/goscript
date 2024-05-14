@@ -15,23 +15,23 @@ type Light struct {
 	entities map[string]entities.Entity
 	// control  *control.Requests
 
-	GSDevice
+	Device
 }
 
 func NewLight(
 	name string,
 	commandFunc func(message mqtt.Message, client mqtt.Client),
 	brightnessFunc func(message mqtt.Message, client mqtt.Client),
-) *Light {
+) (*Light, error) {
 	l := &Light{
-		name:     fmt.Sprintf("all_%s_lights", name),
+		name:     name,
 		entities: make(map[string]entities.Entity),
 	}
 
 	snakeName := strcase.ToSnake(l.name)
 	readableName := strings.Title(strings.ReplaceAll(snakeName, "_", " "))
 
-	mainDevice := hassdevice.New(readableName, fmt.Sprintf("%s_virtual", snakeName), "Group Lights 2000", "GoScript", "0.0.2")
+	mainDevice := hassdevice.New(readableName, fmt.Sprintf("%s", snakeName), "Group Lights 2000", "GoScript", "0.0.2")
 
 	l.dev = mainDevice
 
@@ -42,5 +42,5 @@ func NewLight(
 		CommandFunc(commandFunc).
 		BrightnessCommandFunc(brightnessFunc)
 
-	return l
+	return l, nil
 }

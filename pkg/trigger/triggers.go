@@ -22,6 +22,12 @@ func (r *Runner) AddTrigger(tr *Trigger) {
 	// for each periodic add to the periodic map
 	// cron time is an array of triggers so multiple triggers can have same cron schedule
 	for _, ep := range tr.Periodic {
+		// check if the period is blank then run immediately and don't add to the map
+		if ep == "" {
+			task := r.NewTask(tr, nil)
+			r.taskToRun.Add(task)
+			continue
+		}
 		r.periodic[ep] = append(r.periodic[ep], tr)
 	}
 

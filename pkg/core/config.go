@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/goccy/go-yaml"
 	"github.com/iancoleman/strcase"
+	"github.com/kjbreil/goscript/pkg/homekit"
 	"github.com/kjbreil/goscript/pkg/module"
 	mqtt "github.com/kjbreil/hass-mqtt"
 	ws "github.com/kjbreil/hass-ws"
@@ -17,6 +18,7 @@ import (
 type Config struct {
 	Websocket *ws.Config
 	MQTT      *mqtt.Config
+	Homekit   *homekit.HomeKitConfig
 	Modules   module.Modules
 }
 

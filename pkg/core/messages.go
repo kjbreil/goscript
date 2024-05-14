@@ -5,6 +5,7 @@ import (
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/hass-mqtt/common"
+	"time"
 )
 
 func (gs *GoScript) messageHandler() {
@@ -40,6 +41,12 @@ func (gs *GoScript) handleMessage(m control.Request) error {
 		if err != nil {
 			return err
 		}
+		go func() {
+			err = gs.homekit.Run(gs.devices.GetHomekitAccessories())
+			if err != nil {
+				gs.logger.Error(err.Error())
+			}
+		}()
 	}
 
 	if m.Trigger != nil {
@@ -52,8 +59,11 @@ func (gs *GoScript) handleMessage(m control.Request) error {
 		gs.Runner.AddTask(task)
 	}
 
+	// send a service call
 	if m.Service != nil {
-		gs.ServiceChan <- *m.Service
+		serviceRespAwait := gs.CallService(*m.Service)
+		serviceResp := serviceRespAwait.Timeout(time.Second * 5)
+		rsp.ServiceRsp = serviceResp
 	}
 
 	if m.GetStates != nil {

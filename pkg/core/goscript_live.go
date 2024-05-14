@@ -3,8 +3,10 @@ package core
 import (
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/device"
+	"github.com/kjbreil/goscript/pkg/device/entities"
 	hassdevice "github.com/kjbreil/hass-mqtt/device"
-	"github.com/kjbreil/hass-mqtt/entities"
+	hassentities "github.com/kjbreil/hass-mqtt/entities"
+
 	"sync"
 	"testing"
 )
@@ -63,19 +65,19 @@ func GoScriptTestRun(preFns []TestFunc, postFns []TestFunc, wg *sync.WaitGroup, 
 
 type TestFunc func(ctrl *control.Requests) error
 
-func generateTestDevices() (*device.GSDevice, error) {
+func generateTestDevices() (*device.Device, error) {
 	mainDevice := hassdevice.New("Test Devices", "test_devices", "Tester 1000", "goscript", "0.0.1")
 
-	d := device.NewGSDevice(mainDevice)
+	d := device.NewDevice(mainDevice)
 
-	switchOptions := entities.NewSwitchOptions()
+	switchOptions := hassentities.NewSwitchOptions()
 	switchOptions.Name("Test Switch")
 
-	switchDevice, err := entities.NewSwitch(switchOptions)
+	switchDevice, err := hassentities.NewSwitch(switchOptions)
 	if err != nil {
 		return nil, err
 	}
-	err = d.AddEntities([]entities.Entity{switchDevice})
+	err = d.AddEntities([]device.Entity{entities.NewHassEntity(switchDevice)})
 	if err != nil {
 		return nil, err
 	}

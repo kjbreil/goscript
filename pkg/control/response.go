@@ -1,6 +1,9 @@
 package control
 
-import "github.com/kjbreil/goscript/pkg/state"
+import (
+	"github.com/kjbreil/goscript/pkg/state"
+	"github.com/kjbreil/hass-ws/model"
+)
 
 type Responses chan Response
 
@@ -8,6 +11,7 @@ type Response struct {
 	To   string
 	From string
 
-	Module any
-	States *state.States
+	Module     any
+	States     *state.States
+	ServiceRsp *model.Message
 }

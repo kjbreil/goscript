@@ -1,10 +1,13 @@
 package device
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/brutella/hap/accessory"
+)
 
-type Devices map[string]*GSDevice
+type Devices map[string]*Device
 
-func (ds Devices) GetDevice(entity string) (*GSDevice, error) {
+func (ds Devices) GetDevice(entity string) (*Device, error) {
 	d, ok := ds[entity]
 	if !ok {
 		return nil, fmt.Errorf("could not find device %s", entity)
@@ -18,6 +21,14 @@ func (ds Devices) AddDevices(devices Devices) {
 	}
 }
 
-func (ds Devices) AddDevice(d *GSDevice) {
+func (ds Devices) AddDevice(d *Device) {
 	ds[d.Dev().GetUniqueId()] = d
+}
+
+func (ds Devices) GetHomekitAccessories() []*accessory.A {
+	var accs []*accessory.A
+	for _, d := range ds {
+		accs = append(accs, d.GetHomekitAccessories()...)
+	}
+	return accs
 }

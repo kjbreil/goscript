@@ -20,7 +20,7 @@ func SendDevices(m Module, ds device.Devices) {
 	}
 }
 
-func SendDevice(m Module, d *device.GSDevice) {
+func SendDevice(m Module, d *device.Device) {
 	m.Requests().Chan() <- control.Request{
 		To:      "goscript",
 		From:    m.Name(),
@@ -85,5 +85,14 @@ func SendService(m Module, s services.Service) {
 		To:      "goscript",
 		From:    m.Name(),
 		Service: &s,
+	}
+}
+
+func SendServiceCallback(m Module, s services.Service, callback func(rsp control.Response) error) {
+	m.Requests().Chan() <- control.Request{
+		To:       "goscript",
+		From:     m.Name(),
+		Service:  &s,
+		Callback: callback,
 	}
 }

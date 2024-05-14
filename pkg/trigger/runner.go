@@ -54,6 +54,7 @@ func (r *Runner) RunPeriodic() {
 	var err error
 	// TODO: Validate Periodic slice
 	// run zero length immediate periodics and delete from periodic list
+	// TODO: Validate that this still is used since now the zero length periodics should be added to the taskToRun immediately
 	for _, triggers := range r.periodic {
 		for _, t := range triggers {
 			pLen := len(t.Periodic)

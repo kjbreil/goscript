@@ -33,7 +33,7 @@ type Request struct {
 	TaskTrigger *trigger.Trigger
 	MQTTMessage *mqtt.Message
 	MQTTPublish *MQTTPublish
-	Device      *device.GSDevice
+	Device      *device.Device
 	Service     *services.Service
 	History     *history.GetHistories
 	GetStates   []string

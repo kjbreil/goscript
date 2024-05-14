@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/device"
+	"github.com/kjbreil/goscript/pkg/homekit"
 	"github.com/kjbreil/goscript/pkg/logger"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/service"
@@ -22,9 +23,10 @@ import (
 
 // GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
 type GoScript struct {
-	config *Config
-	mqtt   *hassmqtt.Client
-	ws     *hassws.Client
+	config  *Config
+	mqtt    *hassmqtt.Client
+	ws      *hassws.Client
+	homekit *homekit.HomeKit
 
 	Runner *trigger.Runner
 
@@ -106,20 +108,6 @@ func (gs *GoScript) Connect() error {
 		gs.logger.Info("MQTT connected")
 	}
 
-	for moduleName := range gs.config.Modules {
-		if m, ok := gs.config.Modules[moduleName]; ok {
-			go func(moduleName string, m module.Module) {
-				err := m.Run()
-				if err != nil {
-					gs.logger.Error(fmt.Sprintf("could not run module %s", moduleName), "error", err.Error())
-				} else {
-					gs.logger.Info(fmt.Sprintf("module %s running", moduleName))
-				}
-			}(moduleName, m)
-		}
-
-	}
-
 	// for moduleName, m := range gs.config.Modules {
 	// 	err = m.Run()
 	// 	if err != nil {
@@ -159,9 +147,35 @@ func (gs *GoScript) Connect() error {
 	// TODO: Change this into a RUN function passing the periodics
 	gs.Runner.RunPeriodic()
 
+	// Run the modules
+	for moduleName := range gs.config.Modules {
+		if m, ok := gs.config.Modules[moduleName]; ok {
+			go func(moduleName string, m module.Module) {
+				err := m.Run()
+				if err != nil {
+					gs.logger.Error(fmt.Sprintf("could not run module %s", moduleName), "error", err.Error())
+				} else {
+					gs.logger.Info(fmt.Sprintf("module %s running", moduleName))
+				}
+			}(moduleName, m)
+		}
+
+	}
+
+	// homekit integration needs to be setup after all modules have been run because devices cannot be added to homekit
+	// after starting
+
+	if gs.config.Homekit != nil {
+		gs.homekit = homekit.New(gs.ctx)
+	}
+
 	gs.logger.Info("GoScript started")
 
 	return nil
+}
+
+func (gs *GoScript) CallService(s services.Service) *hassws.Response {
+	return gs.ws.CallService(s)
 }
 
 // Logger returns the logr to create your own logs
