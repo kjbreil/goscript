@@ -3,12 +3,14 @@ package trigger
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"sync"
+	"time"
+
 	"github.com/adhocore/gronx"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/state"
-	"log/slog"
-	"time"
 )
 
 type Runner struct {
@@ -26,6 +28,7 @@ type Runner struct {
 	sChan     service.Chan
 	logger    *slog.Logger
 	ctx       context.Context
+	triggerMu sync.RWMutex
 }
 
 func NewRunner(ctx context.Context, states *state.States, sChan service.Chan, logger *slog.Logger) *Runner {

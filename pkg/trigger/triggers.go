@@ -3,12 +3,16 @@ package trigger
 import (
 	"context"
 	"fmt"
+
 	"github.com/kjbreil/hass-ws/model"
 )
 
 // AddTrigger adds a trigger to the trigger map. There is no validation of a
 func (r *Runner) AddTrigger(tr *Trigger) {
 	tr = SetupTrigger(tr)
+	r.triggerMu.Lock()
+	defer r.triggerMu.Unlock()
+
 	// for each entity add to the triggers map
 	for _, et := range tr.Triggers {
 		r.triggers[et] = append(r.triggers[et], tr)
@@ -38,6 +42,9 @@ func (r *Runner) AddTrigger(tr *Trigger) {
 
 // RemoveTrigger can be used to remove a trigger while program is running.
 func (r *Runner) RemoveTrigger(t *Trigger) {
+	r.triggerMu.Lock()
+	defer r.triggerMu.Unlock()
+
 	for _, et := range t.Triggers {
 		for i, te := range r.triggers[et] {
 			if te.UUID() == t.UUID() {
@@ -56,17 +63,31 @@ func (r *Runner) AddTriggers(triggers ...*Trigger) {
 }
 
 func (r *Runner) RunTriggers(message model.Message) {
-	// TODO: Race condition concurrent read/write
+	r.triggerMu.RLock()
+	defer r.triggerMu.RUnlock()
+
 	if tr, ok := r.triggers[message.DomainEntity()]; ok {
-		for _, trr := range tr {
+		// Create a copy of the triggers slice to avoid holding the lock during processing
+		triggers := make([]*Trigger, len(tr))
+		copy(triggers, tr)
+		r.triggerMu.RUnlock()
+
+		for _, trr := range triggers {
 			r.triggerDomainEntity(&message, trr)
 		}
+		r.triggerMu.RLock()
 	}
 
 	if tr, ok := r.domainTrigger[message.Domain()]; ok {
-		for _, trr := range tr {
+		// Create a copy of the triggers slice to avoid holding the lock during processing
+		triggers := make([]*Trigger, len(tr))
+		copy(triggers, tr)
+		r.triggerMu.RUnlock()
+
+		for _, trr := range triggers {
 			r.triggerDomain(&message, trr)
 		}
+		r.triggerMu.RLock()
 	}
 }
 
@@ -77,6 +98,7 @@ func (r *Runner) triggerDomainEntity(message *model.Message, tr *Trigger) {
 		r.taskToRun.Add(task)
 	}
 }
+
 func (r *Runner) triggerDomain(message *model.Message, tr *Trigger) {
 	passed := tr.Evaluate(message)
 	if passed {
@@ -84,17 +106,26 @@ func (r *Runner) triggerDomain(message *model.Message, tr *Trigger) {
 		r.taskToRun.Add(task)
 	}
 }
+
 func (r *Runner) RunServiceTriggers(message model.Message) {
+	r.triggerMu.RLock()
+	defer r.triggerMu.RUnlock()
+
 	if message.Event != nil && message.Event.Data != nil && message.Event.Data.ServiceData != nil {
 		for _, entity := range message.Event.Data.ServiceData.EntityId {
 			if tr, ok := r.serviceTriggers[entity]; ok {
-				for _, trigger := range tr {
+				// Create a copy of the triggers slice to avoid holding the lock during processing
+				triggers := make([]*Trigger, len(tr))
+				copy(triggers, tr)
+				r.triggerMu.RUnlock()
+
+				for _, trigger := range triggers {
 					r.triggerService(&message, trigger)
 				}
+				r.triggerMu.RLock()
 			}
 		}
 	}
-
 }
 
 func (r *Runner) triggerService(message *model.Message, trigger *Trigger) {
