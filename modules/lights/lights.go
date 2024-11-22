@@ -3,7 +3,6 @@ package lights
 import (
 	"github.com/kjbreil/goscript/modules/circadian"
 	"github.com/kjbreil/goscript/pkg/control"
-	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/trigger"
 )
@@ -59,8 +58,4 @@ func (l *Lights) Triggers() trigger.Triggers {
 	// Setup the motion lights
 	triggers = append(triggers, l.motion()...)
 	return triggers
-}
-
-func (l *Lights) Devices() device.Devices {
-	return nil
 }

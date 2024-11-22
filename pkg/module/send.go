@@ -9,8 +9,8 @@ import (
 	"strconv"
 )
 
-func SendDevices(m Module, ds device.Devices) {
-	for _, d := range ds {
+func SendDevices(m Module, ds *device.Devices) {
+	for _, d := range ds.Slice() {
 		m.Requests().Chan() <- control.Request{
 			To:      "goscript",
 			From:    m.Name(),

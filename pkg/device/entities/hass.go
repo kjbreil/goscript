@@ -2,11 +2,26 @@ package entities
 
 import (
 	"github.com/brutella/hap/accessory"
+	"github.com/kjbreil/goscript/pkg/device"
 	hassentity "github.com/kjbreil/hass-mqtt/entities"
+	"strings"
 )
 
 type HassEntity struct {
 	entity hassentity.Entity
+}
+
+func (e *HassEntity) GetName() string {
+	return e.entity.GetName()
+}
+
+func (e *HassEntity) GetDomain() device.DomainType {
+	de := e.entity.GetDomainEntity()
+	domain := strings.SplitN(de, ".", 1)[1]
+	switch domain {
+	default:
+		return device.DomainTypeUnknown
+	}
 }
 
 func NewHassEntity(e hassentity.Entity) *HassEntity {

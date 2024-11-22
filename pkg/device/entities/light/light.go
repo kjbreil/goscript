@@ -13,7 +13,7 @@ import (
 
 type Light struct {
 	name             string
-	entity           *hassentity.Light
+	hass             *hassentity.Light
 	hassOptions      *hassentity.LightOptions
 	homekitAccessory *accessory.ColoredLightbulb
 }
@@ -34,7 +34,7 @@ func New(name string, options ...func(*Light)) *Light {
 	}
 
 	var err error
-	l.entity, err = hassentity.NewLight(l.hassOptions)
+	l.hass, err = hassentity.NewLight(l.hassOptions)
 	if err != nil {
 		return nil
 	}
@@ -43,15 +43,18 @@ func New(name string, options ...func(*Light)) *Light {
 }
 
 func (l *Light) GetHassEntity() hassentity.Entity {
-	return l.entity
+	if l.hass != nil {
+		return l.hass
+	}
+	return nil
 }
 
 func (l *Light) GetDomainEntity() string {
-	return l.entity.GetDomainEntity()
+	return l.hass.GetDomainEntity()
 }
 
 func (l *Light) UpdateState() {
-	l.entity.UpdateState()
+	l.hass.UpdateState()
 }
 
 func (l *Light) GetHomekitAccessory() *accessory.A {
@@ -66,7 +69,6 @@ func WithHomeKit() func(*Light) {
 		l.homekitAccessory = accessory.NewColoredLightbulb(accessory.Info{
 			Name: l.name,
 		})
-		l.homekitAccessory.Info.Model.SetValue("")
 
 		l.hassOptions.CommandFunc(func(message mqtt.Message, client mqtt.Client) {
 			if string(message.Payload()) == "ON" {
@@ -92,9 +94,9 @@ func WithHomeKit() func(*Light) {
 
 		l.homekitAccessory.Lightbulb.On.OnValueRemoteUpdate(func(v bool) {
 			if v {
-				l.entity.State("ON")
+				l.hass.State("ON")
 			} else {
-				l.entity.State("OFF")
+				l.hass.State("OFF")
 			}
 		})
 	}
@@ -142,7 +144,7 @@ func WithBrightnessCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light
 		l.homekitAccessory.Lightbulb.Brightness.OnValueRemoteUpdate(func(v int) {
 
 			brightness := float64(v) / 100 * 255
-			l.entity.Brightness(strconv.Itoa(int(brightness)))
+			l.hass.Brightness(strconv.Itoa(int(brightness)))
 		})
 
 		l.hassOptions.EnableBrightness().BrightnessCommandFunc(module.TaskMQTT(m, tr))

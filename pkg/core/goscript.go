@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/device"
-	"github.com/kjbreil/goscript/pkg/homekit"
 	"github.com/kjbreil/goscript/pkg/logger"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/service"
@@ -23,14 +22,14 @@ import (
 
 // GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
 type GoScript struct {
-	config  *Config
-	mqtt    *hassmqtt.Client
-	ws      *hassws.Client
-	homekit *homekit.HomeKit
+	config *Config
+	mqtt   *hassmqtt.Client
+	ws     *hassws.Client
+	// homekit *homekit.HomeKit
 
 	Runner *trigger.Runner
 
-	devices device.Devices
+	devices *device.Devices
 
 	areaRegistry map[string][]model.Result
 
@@ -74,7 +73,7 @@ func New(c *Config, logger *slog.Logger) (*GoScript, error) {
 	gs.ServiceChan = make(chan services.Service, 100)
 
 	gs.Runner = trigger.NewRunner(gs.ctx, &gs.states, gs.ServiceChan, gs.logger)
-	gs.devices = make(device.Devices)
+	gs.devices = device.NewDevices()
 
 	return gs, nil
 }
@@ -165,9 +164,9 @@ func (gs *GoScript) Connect() error {
 	// homekit integration needs to be setup after all modules have been run because devices cannot be added to homekit
 	// after starting
 
-	if gs.config.Homekit != nil {
-		gs.homekit = homekit.New(gs.ctx)
-	}
+	// if gs.config.Homekit != nil {
+	// 	gs.homekit = homekit.New(gs.ctx)
+	// }
 
 	gs.logger.Info("GoScript started")
 

@@ -11,7 +11,7 @@ func (gs *GoScript) AddDevice(dev *device.Device) error {
 		return err
 	}
 
-	gs.devices[dev.Dev().GetUniqueId()] = dev
+	gs.devices.AddDevice(dev)
 
 	return nil
 }

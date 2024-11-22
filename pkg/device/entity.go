@@ -6,6 +6,8 @@ import (
 )
 
 type Entity interface {
+	GetName() string
+	GetDomain() DomainType
 	GetHassEntity() entities.Entity
 	GetDomainEntity() string
 	UpdateState()

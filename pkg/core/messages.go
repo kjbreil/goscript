@@ -41,12 +41,12 @@ func (gs *GoScript) handleMessage(m control.Request) error {
 		if err != nil {
 			return err
 		}
-		go func() {
-			err = gs.homekit.Run(gs.devices.GetHomekitAccessories())
-			if err != nil {
-				gs.logger.Error(err.Error())
-			}
-		}()
+		// go func() {
+		// 	err = gs.homekit.Run(gs.devices.GetHomekitAccessories())
+		// 	if err != nil {
+		// 		gs.logger.Error(err.Error())
+		// 	}
+		// }()
 	}
 
 	if m.Trigger != nil {
@@ -101,10 +101,12 @@ func (gs *GoScript) handleMessage(m control.Request) error {
 	}
 
 	if m.Callback != nil {
-		err := m.Callback(rsp)
-		if err != nil {
-			return err
-		}
+		go func() {
+			err := m.Callback(rsp)
+			if err != nil {
+				gs.logger.Error("callback returned an error", "err", err.Error())
+			}
+		}()
 	}
 
 	return nil

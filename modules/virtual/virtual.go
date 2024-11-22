@@ -21,7 +21,7 @@ type Virtual struct {
 }
 
 func (v *Virtual) Run() error {
-	devices := make(device.Devices)
+	devices := device.NewDevices()
 	for n := range v.Lights {
 		snakeName := strcase.ToSnake(n)
 		readableName := strings.Title(strings.ReplaceAll(snakeName, "_", " "))
@@ -30,8 +30,8 @@ func (v *Virtual) Run() error {
 		lightOptions := entities.NewLightOptions().Name(readableName)
 		light, _ := entities.NewLight(lightOptions)
 		dev.Add(light)
-		gd := device.NewGSDevice(dev)
-		devices[dev.GetUniqueId()] = gd
+		gd := device.NewDevice(dev)
+		devices.AddDevice(gd)
 
 	}
 	for n := range v.BinarySensors {
@@ -44,7 +44,7 @@ func (v *Virtual) Run() error {
 		bs, _ := entities.NewBinarySensor(binarySensorOptions)
 
 		dev.Add(bs)
-		gd := device.NewGSDevice(dev)
+		gd := device.NewDevice(dev)
 		go func() {
 			for {
 				time.Sleep(10 * time.Second)
@@ -52,8 +52,9 @@ func (v *Virtual) Run() error {
 				time.Sleep(1 * time.Second)
 				bs.State("OFF")
 			}
+
 		}()
-		devices[dev.GetUniqueId()] = gd
+		devices.AddDevice(gd)
 	}
 	module.SendDevices(v, devices)
 

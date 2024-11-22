@@ -3,7 +3,6 @@ package circadian
 import (
 	"fmt"
 	"github.com/kjbreil/goscript/light"
-	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/sixdouglas/suncalc"
@@ -39,10 +38,6 @@ func (c *Circadian) Run() error {
 func (c *Circadian) Triggers() trigger.Triggers {
 	return nil
 
-}
-
-func (c *Circadian) Devices() device.Devices {
-	return nil
 }
 
 func (c *Circadian) Update() error {
