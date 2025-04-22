@@ -17,3 +17,4 @@ config**.yml
 .idea/**
 docker/**
 /run/**
+**.DS_Store
