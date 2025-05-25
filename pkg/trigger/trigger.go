@@ -2,13 +2,14 @@ package trigger
 
 import (
 	"context"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/kjbreil/goscript/helpers"
 	"github.com/kjbreil/goscript/pkg/eval"
 	"github.com/kjbreil/goscript/pkg/periodic"
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/hass-ws/model"
-	"time"
 )
 
 // Trigger takes in trigger items, domains or a schedule and runs a function based on any variation of the inputs.
@@ -23,8 +24,8 @@ import (
 // States is a list of entities to which the state will be available within the task function. All triggers are
 // automatically included in the list. DomainStates allows you to specify a whole domain to be included in the States.
 //
-// Evaluation is done through a list of strings that are run through github.com/antonmedv/expr to evaluate the output.
-// Like with PyScript type is important in the evaluation scripts. Check out github.com/antonmedv/expr for more details
+// Evaluation is done through a list of strings that are run through github.com/expr-lang/expr to evaluate the output.
+// Like with PyScript type is important in the evaluation scripts. Check out github.com/expr-lang/expr for more details
 // on casting and converting. You cannot mix types in a single evaluation so `state == "on" || state > 10` will always
 // return false due to failure parsing the evaluation. Attributes are available inside the evaluations so
 // `color_temp > 100` will work as long as color_temp exists in the attributes of the entity and the data type is a float

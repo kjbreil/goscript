@@ -2,7 +2,8 @@ package eval
 
 import (
 	"fmt"
-	"github.com/antonmedv/expr"
+
+	"github.com/expr-lang/expr"
 	"github.com/kjbreil/goscript/pkg/state"
 )
 
