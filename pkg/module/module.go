@@ -41,6 +41,10 @@ func (m *Base) AssignBase(ctx context.Context, requests *control.Requests) {
 	m.requests = requests
 }
 
+func (m *Base) Logger() *slog.Logger {
+	return m.logger
+}
+
 func (m *Base) Responses(_ control.Response) {
 
 }
