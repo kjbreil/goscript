@@ -2,6 +2,8 @@ package module
 
 import (
 	"context"
+	"log/slog"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/trigger"
@@ -9,7 +11,7 @@ import (
 
 type Module interface {
 	// Init brings in data streams that might be needed and returns the triggers the module provides
-	Init(ctx context.Context, requests *control.Requests) error
+	Init(ctx context.Context, requests *control.Requests, logger *slog.Logger) error
 	Responses(rsp control.Response)
 	Requests() *control.Requests
 	Run() error
@@ -23,13 +25,14 @@ type Module interface {
 type Base struct {
 	Ctx      context.Context
 	requests *control.Requests
+	logger   *slog.Logger
 }
 
 func (m *Base) mustImplementBase() {}
 
-func (m *Base) Init(ctx context.Context, requests *control.Requests) error {
+func (m *Base) Init(ctx context.Context, requests *control.Requests, logger *slog.Logger) error {
 	m.AssignBase(ctx, requests)
-
+	m.logger = logger
 	return nil
 }
 

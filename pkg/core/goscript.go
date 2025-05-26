@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
+	"time"
+
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/logger"
@@ -15,9 +19,6 @@ import (
 	hassws "github.com/kjbreil/hass-ws"
 	"github.com/kjbreil/hass-ws/model"
 	"github.com/kjbreil/hass-ws/services"
-	"log/slog"
-	"os"
-	"time"
 )
 
 // GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
@@ -85,7 +86,7 @@ func (gs *GoScript) Connect() error {
 
 	// initialize the modules
 	for _, m := range gs.config.Modules {
-		err = m.Init(gs.ctx, gs.requests)
+		err = m.Init(gs.ctx, gs.requests, gs.logger.WithGroup(m.Name()))
 		if err != nil {
 			return err
 		}
