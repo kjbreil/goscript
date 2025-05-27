@@ -42,6 +42,9 @@ func (m *Base) AssignBase(ctx context.Context, requests *control.Requests) {
 }
 
 func (m *Base) Logger() *slog.Logger {
+	if m.logger == nil {
+		return slog.Default()
+	}
 	return m.logger
 }
 

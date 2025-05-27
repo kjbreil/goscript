@@ -2,6 +2,11 @@ package core
 
 import (
 	"errors"
+	"os"
+	"reflect"
+	"strings"
+	"time"
+
 	"github.com/goccy/go-yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/kjbreil/goscript/pkg/homekit"
@@ -9,10 +14,6 @@ import (
 	mqtt "github.com/kjbreil/hass-mqtt"
 	ws "github.com/kjbreil/hass-ws"
 	"github.com/mitchellh/mapstructure"
-	"os"
-	"reflect"
-	"strings"
-	"time"
 )
 
 type Config struct {
@@ -20,6 +21,7 @@ type Config struct {
 	MQTT      *mqtt.Config
 	Homekit   *homekit.HomeKitConfig
 	Modules   module.Modules
+	Timezone  string
 }
 
 var (
