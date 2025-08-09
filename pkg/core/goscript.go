@@ -86,7 +86,7 @@ func (gs *GoScript) Connect() error {
 
 	// initialize the modules
 	for _, m := range gs.config.Modules {
-		err = m.Init(gs.ctx, gs.requests, gs.logger.WithGroup(m.Name()))
+		err = m.Init(gs.ctx, gs.requests, gs.logger)
 		if err != nil {
 			return err
 		}
@@ -226,10 +226,12 @@ func GetModule[T any](gs *GoScript, key string) T {
 }
 
 func DefaultLogger() *slog.Logger {
-	// return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-	// 	AddSource: true,
-	// }))
-
 	return slog.New(logger.NewHandler(os.Stdout, nil))
+}
 
+// DefaultLoggerWithLevel returns a logger with the specified level
+func DefaultLoggerWithLevel(level slog.Level) *slog.Logger {
+	return slog.New(logger.NewHandler(os.Stdout, &slog.HandlerOptions{
+		Level: level,
+	}))
 }

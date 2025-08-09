@@ -31,14 +31,14 @@ type Base struct {
 func (m *Base) mustImplementBase() {}
 
 func (m *Base) Init(ctx context.Context, requests *control.Requests, logger *slog.Logger) error {
-	m.AssignBase(ctx, requests)
-	m.logger = logger
+	m.AssignBase(ctx, requests, logger)
 	return nil
 }
 
-func (m *Base) AssignBase(ctx context.Context, requests *control.Requests) {
+func (m *Base) AssignBase(ctx context.Context, requests *control.Requests, logger *slog.Logger) {
 	m.Ctx = ctx
 	m.requests = requests
+	m.logger = logger
 }
 
 func (m *Base) Logger() *slog.Logger {

@@ -1,6 +1,7 @@
 package control
 
 import (
+	"github.com/kjbreil/goscript/pkg/history"
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/hass-ws/model"
 )
@@ -14,4 +15,5 @@ type Response struct {
 	Module     any
 	States     *state.States
 	ServiceRsp *model.Message
+	Histories  *history.Histories
 }

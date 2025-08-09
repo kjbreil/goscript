@@ -1,10 +1,12 @@
 package state
 
 import (
-	"github.com/kjbreil/hass-ws/model"
+	"maps"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/kjbreil/hass-ws/model"
 )
 
 type States struct {
@@ -185,11 +187,22 @@ func (ss *States) Map() map[string]*State {
 
 	sts := make(map[string]*State)
 
-	for k, v := range ss.s {
-		sts[k] = v
-	}
+	maps.Copy(sts, ss.s)
 
 	return sts
+}
+
+// Iterate calls the provided yield function for each state.
+// If yield returns false, iteration stops early.
+func (ss *States) Iterate(yield func(key string, st *State) bool) {
+	ss.m.Lock()
+	defer ss.m.Unlock()
+
+	for k, st := range ss.s {
+		if !yield(k, st) {
+			return
+		}
+	}
 }
 
 // SubSet returns a new States which contains a subset of the current states based on entities passed

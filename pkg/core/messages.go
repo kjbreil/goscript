@@ -2,10 +2,11 @@ package core
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/hass-mqtt/common"
-	"time"
 )
 
 func (gs *GoScript) messageHandler() {
@@ -69,6 +70,14 @@ func (gs *GoScript) handleMessage(m control.Request) error {
 	if m.GetStates != nil {
 		states := gs.states.SubSet(m.GetStates)
 		rsp.States = &states
+	}
+
+	if m.History != nil {
+		histories, err := gs.GetHistory(m.History.Start, m.History.End, m.History.Entities...)
+		if err != nil {
+			return err
+		}
+		rsp.Histories = &histories
 	}
 
 	if m.MQTTPublish != nil {

@@ -86,7 +86,8 @@ func (r *Runner) RunPeriodic() {
 		for {
 			select {
 			case <-ticker.C:
-				if time.Now().After(r.nextPeriodic) {
+				now := time.Now()
+				if now.After(r.nextPeriodic) {
 					go r.shouldRunTrigger()
 				}
 			case <-r.ctx.Done():
@@ -198,6 +199,9 @@ func (r *Runner) taskWaitRequest(t *Task) {
 
 func fillNextTime(periodics map[string]Triggers) (time.Time, error) {
 	next := time.Now().Add(60 * time.Minute)
+	if len(periodics) == 0 {
+		return time.Now().Add(1 * time.Second), nil
+	}
 	for _, triggers := range periodics {
 		for _, t := range triggers {
 			nt, err := t.NextTime(time.Now())
