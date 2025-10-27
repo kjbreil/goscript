@@ -40,6 +40,6 @@ func (l *Light) Effect(effect string) *Light {
 	return l
 }
 func (l *Light) Kelvin(kelvin float64) *Light {
-	l.turnOnParams.ColorTempKelvin = &kelvin
+	l.turnOnParams.Kelvin = &kelvin
 	return l
 }

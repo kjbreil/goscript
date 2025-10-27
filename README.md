@@ -101,12 +101,12 @@ Within each TriggerFunc a task object is available to get information from.
 ## Services
 GoScript has a channel to put service calls onto. A set of default services to call is available in the [hass-ws](https://github.com/kjbreil/hass-ws) package however this is most likely not a complete list of services available in your Home Assistant installation since the service list is dynamic based on integrations installed. Generating your own service definitions is needed to interact properly with all your specific integrations.
 
-From your personal GoScript project directory run these commands to install the service generator and run it. You must have a config.yml with the websocket credentials defined. HassWSService will generate a folder called services and the files within, make sure you do not already have a folder named services in the root of your project.
+From your personal GoScript project directory run these commands to install the service generator and run it. You must have a config.yml with the websocket credentials defined. hassws-gen will generate a folder called services and the files within, make sure you do not already have a folder named services in the root of your project.
 ```bash
-go install github.com/kjbreil/hass-ws/helpers/HassWSService@latest
+go install github.com/kjbreil/hass-ws/cmd/hassws-gen@latest
 go install github.com/campoy/jsonenums@latest
 go install golang.org/x/tools/cmd/stringer@latest
-HassWSService
+hassws-gen
 go generate ./...
 ```
 

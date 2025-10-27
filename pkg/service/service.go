@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	hass_ws "github.com/kjbreil/hass-ws"
+	hass_ws "github.com/kjbreil/hass-ws/pkg/hass"
 	"github.com/kjbreil/hass-ws/services"
 	"log/slog"
 	"strings"

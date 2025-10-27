@@ -16,7 +16,7 @@ import (
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	hassmqtt "github.com/kjbreil/hass-mqtt"
-	hassws "github.com/kjbreil/hass-ws"
+	hassws "github.com/kjbreil/hass-ws/pkg/hass"
 	"github.com/kjbreil/hass-ws/model"
 	"github.com/kjbreil/hass-ws/services"
 )

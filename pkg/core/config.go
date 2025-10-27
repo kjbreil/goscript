@@ -13,7 +13,7 @@ import (
 	"github.com/kjbreil/goscript/pkg/homekit"
 	"github.com/kjbreil/goscript/pkg/module"
 	mqtt "github.com/kjbreil/hass-mqtt"
-	ws "github.com/kjbreil/hass-ws"
+	ws "github.com/kjbreil/hass-ws/pkg/hass"
 	"github.com/mitchellh/mapstructure"
 )
 
