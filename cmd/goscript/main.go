@@ -1,14 +1,16 @@
 package main
 
 import (
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/kjbreil/goscript/modules/circadian"
 	"github.com/kjbreil/goscript/modules/lights"
 	"github.com/kjbreil/goscript/modules/virtual"
 	"github.com/kjbreil/goscript/pkg/core"
 	"github.com/kjbreil/goscript/pkg/module"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func main() {
@@ -22,7 +24,15 @@ func main() {
 		panic(err)
 	}
 
-	gs, err := core.New(config, core.DefaultLogger())
+	// Create logger with configured log level
+	var logger *slog.Logger
+	if config.GoScript != nil {
+		logger = core.DefaultLoggerWithLevel(config.GoScript.GetLogLevel())
+	} else {
+		logger = core.DefaultLogger()
+	}
+
+	gs, err := core.New(config, logger)
 	if err != nil {
 		panic(err)
 	}

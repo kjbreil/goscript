@@ -1,10 +1,11 @@
 package entities
 
 import (
+	"strings"
+
 	"github.com/brutella/hap/accessory"
 	"github.com/kjbreil/goscript/pkg/device"
 	hassentity "github.com/kjbreil/hass-mqtt/entities"
-	"strings"
 )
 
 type HassEntity struct {

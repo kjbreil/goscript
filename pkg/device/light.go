@@ -2,11 +2,12 @@ package device
 
 import (
 	"fmt"
+	"strings"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/iancoleman/strcase"
-	hassdevice "github.com/kjbreil/hass-mqtt/device"
 	"github.com/kjbreil/hass-mqtt/entities"
-	"strings"
+	hassdevice "github.com/kjbreil/hass-mqtt/pkg/device"
 )
 
 type Light struct {

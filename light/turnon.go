@@ -19,7 +19,7 @@ func (l *Light) TurnOn(t *trigger.Task, entities []string) {
 }
 
 func (l *Light) Brightness(brightness float64) *Light {
-	l.turnOnParams.Brightness = &brightness
+	l.turnOnParams.BrightnessPct = &brightness
 	return l
 }
 func (l *Light) BrightnessPct(brightnessPct float64) *Light {
@@ -27,34 +27,19 @@ func (l *Light) BrightnessPct(brightnessPct float64) *Light {
 	return l
 }
 func (l *Light) BrightnessStep(brightnessStep float64) *Light {
-	l.turnOnParams.BrightnessStep = &brightnessStep
+	l.turnOnParams.BrightnessStepPct = &brightnessStep
 	return l
 }
 func (l *Light) BrightnessStepPct(brightnessStepPct float64) *Light {
 	l.turnOnParams.BrightnessStepPct = &brightnessStepPct
 	return l
 }
-func (l *Light) ColorName(colorName services.ColorName) *Light {
-	l.turnOnParams.ColorName = &colorName
-	return l
-}
-func (l *Light) ColorTemp(colorTemp float64) *Light {
-	l.turnOnParams.ColorTemp = &colorTemp
-	return l
-}
+
 func (l *Light) Effect(effect string) *Light {
 	l.turnOnParams.Effect = &effect
 	return l
 }
 func (l *Light) Kelvin(kelvin float64) *Light {
-	l.turnOnParams.Kelvin = &kelvin
-	return l
-}
-func (l *Light) Profile(profile string) *Light {
-	l.turnOnParams.Profile = &profile
-	return l
-}
-func (l *Light) White(white float64) *Light {
-	l.turnOnParams.White = &white
+	l.turnOnParams.ColorTempKelvin = &kelvin
 	return l
 }

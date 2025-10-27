@@ -2,9 +2,10 @@ package core
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/kjbreil/goscript/pkg/history"
 	"github.com/kjbreil/goscript/pkg/state"
-	"time"
 )
 
 func (gs *GoScript) GetHistory(start, end time.Time, entities ...string) (history.Histories, error) {

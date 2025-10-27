@@ -2,12 +2,13 @@ package circadian
 
 import (
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/kjbreil/goscript/light"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/sixdouglas/suncalc"
-	"math"
-	"time"
 )
 
 var key = "circadian"
@@ -86,6 +87,10 @@ func (c *Circadian) Temperature() float64 {
 	return c.currentTemperature
 }
 
+func (c *Circadian) Kelvin() float64 {
+	return c.currentTemperature
+}
+
 func (c *Circadian) BrightnessPct() float64 {
 	return c.currentBrightnessPct
 }
@@ -97,7 +102,7 @@ func (c *Circadian) TurnOn(t *trigger.Task, entities ...string) {
 	c.Calculate()
 
 	light.New().
-		ColorTemp(c.Temperature()).
+		Kelvin(c.Kelvin()).
 		BrightnessPct(c.BrightnessPct()).
 		Transition(c.Transition).
 		TurnOn(t, entities)
@@ -111,7 +116,7 @@ func (c *Circadian) TurnOnTemperature(t *trigger.Task, entities ...string) {
 	c.Calculate()
 
 	light.New().
-		ColorTemp(c.Temperature()).
+		Kelvin(c.Kelvin()).
 		Transition(c.Transition).
 		TurnOn(t, entities)
 }
@@ -123,7 +128,7 @@ func (c *Circadian) TurnOnTemperatureManualBrightness(t *trigger.Task, brightnes
 	c.Calculate()
 
 	light.New().
-		ColorTemp(c.Temperature()).
+		Kelvin(c.Kelvin()).
 		BrightnessPct(brightness).
 		Transition(c.Transition).
 		TurnOn(t, entities)

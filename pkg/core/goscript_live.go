@@ -4,8 +4,8 @@ import (
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/device/entities"
-	hassdevice "github.com/kjbreil/hass-mqtt/device"
 	hassentities "github.com/kjbreil/hass-mqtt/entities"
+	hassdevice "github.com/kjbreil/hass-mqtt/pkg/device"
 
 	"sync"
 	"testing"

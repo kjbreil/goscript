@@ -1,13 +1,14 @@
 package core
 
 import (
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/periodic"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/kjbreil/hass-ws/services"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestTrigger(t *testing.T) {

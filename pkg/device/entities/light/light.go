@@ -1,14 +1,15 @@
 package light
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/brutella/hap/accessory"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/iancoleman/strcase"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	hassentity "github.com/kjbreil/hass-mqtt/entities"
-	"strconv"
-	"strings"
 )
 
 type Light struct {

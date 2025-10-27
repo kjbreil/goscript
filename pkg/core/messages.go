@@ -6,7 +6,7 @@ import (
 
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/module"
-	"github.com/kjbreil/hass-mqtt/common"
+	"github.com/kjbreil/hass-mqtt/pkg/common"
 )
 
 func (gs *GoScript) messageHandler() {

@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"log/slog"
 	"os"
 	"reflect"
 	"strings"
@@ -16,7 +17,34 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+type GoScriptConfig struct {
+	LogLevel string
+}
+
+// GetLogLevel parses the LogLevel string and returns the corresponding slog.Level.
+// Supported values: "debug", "info", "warn", "error" (case-insensitive).
+// Returns slog.LevelInfo if the value is empty or invalid.
+func (g *GoScriptConfig) GetLogLevel() slog.Level {
+	if g == nil || g.LogLevel == "" {
+		return slog.LevelInfo
+	}
+
+	switch strings.ToLower(g.LogLevel) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
 type Config struct {
+	GoScript  *GoScriptConfig
 	Websocket *ws.Config
 	MQTT      *mqtt.Config
 	Homekit   *homekit.HomeKitConfig

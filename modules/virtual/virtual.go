@@ -2,14 +2,15 @@ package virtual
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/iancoleman/strcase"
 	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/trigger"
-	hassdevice "github.com/kjbreil/hass-mqtt/device"
 	"github.com/kjbreil/hass-mqtt/entities"
-	"strings"
-	"time"
+	hassdevice "github.com/kjbreil/hass-mqtt/pkg/device"
 )
 
 var key = "virtual"

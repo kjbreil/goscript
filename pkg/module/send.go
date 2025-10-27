@@ -1,12 +1,13 @@
 package module
 
 import (
+	"runtime"
+	"strconv"
+
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/device"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/kjbreil/hass-ws/services"
-	"runtime"
-	"strconv"
 )
 
 func SendDevices(m Module, ds *device.Devices) {

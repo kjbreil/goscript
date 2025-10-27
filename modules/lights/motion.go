@@ -1,13 +1,14 @@
 package lights
 
 import (
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/kjbreil/goscript/light"
 	"github.com/kjbreil/goscript/modules/circadian"
 	"github.com/kjbreil/goscript/pkg/eval"
 	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/trigger"
-	"time"
 )
 
 type motionLight struct {

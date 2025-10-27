@@ -1,8 +1,9 @@
 package eval
 
 import (
-	"github.com/kjbreil/goscript/pkg/state"
 	"testing"
+
+	"github.com/kjbreil/goscript/pkg/state"
 )
 
 func TestEvaluate(t *testing.T) {

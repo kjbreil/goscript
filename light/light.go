@@ -2,6 +2,7 @@ package light
 
 import (
 	"fmt"
+
 	"github.com/kjbreil/goscript/pkg/trigger"
 	"github.com/kjbreil/hass-ws/services"
 )
@@ -13,12 +14,6 @@ type Light struct {
 
 func New() *Light {
 	return &Light{}
-}
-
-func (l *Light) Flash(flash services.Flash) *Light {
-	l.turnOnParams.Flash = &flash
-	l.turnOffParams.Flash = &flash
-	return l
 }
 
 func (l *Light) Transition(transition float64) *Light {

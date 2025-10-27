@@ -1,8 +1,9 @@
 package history
 
 import (
-	"github.com/kjbreil/goscript/pkg/state"
 	"time"
+
+	"github.com/kjbreil/goscript/pkg/state"
 )
 
 type Histories []*History

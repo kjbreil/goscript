@@ -1,10 +1,11 @@
 package device
 
 import (
+	"strings"
+
 	"github.com/brutella/hap/accessory"
 	"github.com/iancoleman/strcase"
-	hassdevice "github.com/kjbreil/hass-mqtt/device"
-	"strings"
+	hassdevice "github.com/kjbreil/hass-mqtt/pkg/device"
 )
 
 type Device struct {

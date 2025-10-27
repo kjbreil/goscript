@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/kjbreil/goscript/pkg/eval"
 	"github.com/kjbreil/goscript/pkg/service"
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/hass-ws/model"
-	"time"
 )
 
 // Task is used within a TriggerFunc to give information about the task.
