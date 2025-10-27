@@ -78,11 +78,12 @@ func (r *Runner) RunPeriodic() {
 	// setup the next fire time for all triggers
 	r.nextPeriodic, err = fillNextTime(r.periodic)
 	if err != nil {
-		r.logger.Error(err.Error(), "NextTime")
+		r.logger.Error("failed to get next time", "error", err.Error())
 	}
 
 	ticker := time.NewTicker(time.Second)
 	go func() {
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
@@ -105,7 +106,7 @@ func (r *Runner) shouldRunTrigger() {
 				r.logger.Info("next time not set")
 				_, err := t.NextTime(time.Now())
 				if err != nil {
-					r.logger.Error(err.Error(), "setting next time failed")
+					r.logger.Error("setting next time failed", "error", err.Error())
 					continue
 				}
 			}
@@ -115,7 +116,7 @@ func (r *Runner) shouldRunTrigger() {
 
 				_, err := t.NextTime(time.Now())
 				if err != nil {
-					r.logger.Error(err.Error(), "setting next time failed")
+					r.logger.Error("setting next time failed", "error", err.Error())
 					continue
 				}
 			}
@@ -137,7 +138,7 @@ func (r *Runner) runGronJob(gron *gronx.Gronx, start bool) {
 		} else {
 			due, err = gron.IsDue(expr)
 			if err != nil {
-				r.logger.Error(err.Error(), "gron job IsDue failed")
+				r.logger.Error("gron job IsDue failed", "error", err.Error())
 				continue
 			}
 		}
@@ -154,10 +155,12 @@ func (r *Runner) RunTask(t *Task) {
 	r.logger.Debug(fmt.Sprintf("task started: %s", t.UUID()), "messageEntity", t.Message.DomainEntity())
 
 	for t.Running() {
-		timer := time.NewTimer(100)
+		timer := time.NewTimer(100 * time.Millisecond)
 		select {
 		case <-timer.C:
+			timer.Stop()
 		case <-t.CtxDone():
+			timer.Stop()
 			r.logger.Debug(fmt.Sprintf("task %s exited awaiting to run", t.UUID()))
 			return
 		}

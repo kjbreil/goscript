@@ -1,19 +1,32 @@
 package trigger
 
 import (
-	"github.com/google/uuid"
+	"log/slog"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
+const MaxTasksPerUUID = 1000 // Maximum queued tasks per UUID
+
 type TaskMap struct {
-	tasks map[uuid.UUID][]*Task
-	m     *sync.Mutex
+	tasks  map[uuid.UUID][]*Task
+	m      *sync.Mutex
+	logger *slog.Logger
 }
 
 func NewTaskMap() TaskMap {
 	return TaskMap{
 		tasks: make(map[uuid.UUID][]*Task),
 		m:     &sync.Mutex{},
+	}
+}
+
+func NewTaskMapWithLogger(logger *slog.Logger) TaskMap {
+	return TaskMap{
+		tasks:  make(map[uuid.UUID][]*Task),
+		m:      &sync.Mutex{},
+		logger: logger,
 	}
 }
 
@@ -55,6 +68,19 @@ func (tm *TaskMap) Add(t *Task) {
 	}
 	tm.m.Lock()
 	defer tm.m.Unlock()
+
+	currentLen := len(tm.tasks[t.UUID()])
+
+	// Warn if queue is getting large
+	if tm.logger != nil {
+		if currentLen > MaxTasksPerUUID {
+			tm.logger.Error("task queue exceeded maximum", "uuid", t.UUID(), "queued", currentLen, "max", MaxTasksPerUUID)
+			return // Drop task to prevent unbounded growth
+		} else if currentLen > MaxTasksPerUUID/2 {
+			tm.logger.Warn("task queue growing large", "uuid", t.UUID(), "queued", currentLen, "max", MaxTasksPerUUID)
+		}
+	}
+
 	tm.tasks[t.UUID()] = append(tm.tasks[t.UUID()], t)
 }
 

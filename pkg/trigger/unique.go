@@ -2,6 +2,8 @@ package trigger
 
 import (
 	"context"
+	"sync"
+
 	"github.com/google/uuid"
 )
 
@@ -19,6 +21,7 @@ type Unique struct {
 	running *bool
 	ctx     context.Context
 	cancel  context.CancelFunc
+	mu      sync.Mutex // Protects ctx and cancel fields
 }
 
 func (u *Unique) Running() *bool {
@@ -33,10 +36,14 @@ func (u *Unique) SetRunning(running bool) {
 }
 
 func (u *Unique) NewCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	u.ctx, u.cancel = context.WithCancel(ctx)
 	return u.ctx, u.cancel
 }
 func (u *Unique) CancelNew(ctx context.Context) (context.Context, context.CancelFunc) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	if u.cancel != nil {
 		u.cancel()
 	}

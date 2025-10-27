@@ -98,13 +98,20 @@ func (ss *States) Upsert(ps *State) *State {
 }
 
 // Combine takes two States objects and merges them, passed object will overwrite a state in current object
+// To avoid deadlocks, we first create a copy of cs's data, then merge it into ss
 func (ss *States) Combine(cs *States) {
+	// First, get a copy of cs's data while holding only cs's lock
+	cs.m.Lock()
+	csCopy := make(map[string]*State, len(cs.s))
+	for k, v := range cs.s {
+		csCopy[k] = v
+	}
+	cs.m.Unlock()
+
+	// Now merge the copy into ss while holding only ss's lock
 	ss.m.Lock()
 	defer ss.m.Unlock()
-
-	cs.m.Lock()
-	defer cs.m.Unlock()
-	for k, v := range cs.s {
+	for k, v := range csCopy {
 		ss.s[k] = v
 	}
 }

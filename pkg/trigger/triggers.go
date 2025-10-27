@@ -64,30 +64,29 @@ func (r *Runner) AddTriggers(triggers ...*Trigger) {
 
 func (r *Runner) RunTriggers(message model.Message) {
 	r.triggerMu.RLock()
-	defer r.triggerMu.RUnlock()
 
+	// Create copies of trigger slices while holding the lock
+	var entityTriggers []*Trigger
 	if tr, ok := r.triggers[message.DomainEntity()]; ok {
-		// Create a copy of the triggers slice to avoid holding the lock during processing
-		triggers := make([]*Trigger, len(tr))
-		copy(triggers, tr)
-		r.triggerMu.RUnlock()
-
-		for _, trr := range triggers {
-			r.triggerDomainEntity(&message, trr)
-		}
-		r.triggerMu.RLock()
+		entityTriggers = make([]*Trigger, len(tr))
+		copy(entityTriggers, tr)
 	}
 
+	var domainTriggers []*Trigger
 	if tr, ok := r.domainTrigger[message.Domain()]; ok {
-		// Create a copy of the triggers slice to avoid holding the lock during processing
-		triggers := make([]*Trigger, len(tr))
-		copy(triggers, tr)
-		r.triggerMu.RUnlock()
+		domainTriggers = make([]*Trigger, len(tr))
+		copy(domainTriggers, tr)
+	}
 
-		for _, trr := range triggers {
-			r.triggerDomain(&message, trr)
-		}
-		r.triggerMu.RLock()
+	r.triggerMu.RUnlock()
+
+	// Process triggers without holding the lock
+	for _, trr := range entityTriggers {
+		r.triggerDomainEntity(&message, trr)
+	}
+
+	for _, trr := range domainTriggers {
+		r.triggerDomain(&message, trr)
 	}
 }
 
@@ -108,22 +107,28 @@ func (r *Runner) triggerDomain(message *model.Message, tr *Trigger) {
 }
 
 func (r *Runner) RunServiceTriggers(message model.Message) {
+	if message.Event == nil || message.Event.Data == nil || message.Event.Data.ServiceData == nil {
+		return
+	}
+
 	r.triggerMu.RLock()
-	defer r.triggerMu.RUnlock()
 
-	if message.Event != nil && message.Event.Data != nil && message.Event.Data.ServiceData != nil {
-		for _, entity := range message.Event.Data.ServiceData.EntityId {
-			if tr, ok := r.serviceTriggers[entity]; ok {
-				// Create a copy of the triggers slice to avoid holding the lock during processing
-				triggers := make([]*Trigger, len(tr))
-				copy(triggers, tr)
-				r.triggerMu.RUnlock()
+	// Create copies of all service triggers for relevant entities while holding the lock
+	allTriggers := make(map[string][]*Trigger)
+	for _, entity := range message.Event.Data.ServiceData.EntityId {
+		if tr, ok := r.serviceTriggers[entity]; ok {
+			triggers := make([]*Trigger, len(tr))
+			copy(triggers, tr)
+			allTriggers[entity] = triggers
+		}
+	}
 
-				for _, trigger := range triggers {
-					r.triggerService(&message, trigger)
-				}
-				r.triggerMu.RLock()
-			}
+	r.triggerMu.RUnlock()
+
+	// Process triggers without holding the lock
+	for _, triggers := range allTriggers {
+		for _, trigger := range triggers {
+			r.triggerService(&message, trigger)
 		}
 	}
 }

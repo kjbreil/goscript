@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -36,6 +37,7 @@ type Task struct {
 	waitRequest chan *Trigger
 	waitDone    chan bool
 	running     *bool
+	runningMu   sync.RWMutex // Protects access to running pointer and its value
 }
 
 // TaskFunc is used to include a task object in MQTT command functions.
@@ -45,8 +47,8 @@ func New(tr *Trigger) *Task {
 	return &Task{
 		states:      tr.States,
 		f:           tr.Func,
-		waitRequest: make(chan *Trigger),
-		waitDone:    make(chan bool),
+		waitRequest: make(chan *Trigger, 1),  // Buffered to prevent deadlock
+		waitDone:    make(chan bool, 1),      // Buffered to prevent deadlock
 	}
 }
 
@@ -77,6 +79,8 @@ func (t *Task) Cancel() {
 }
 
 func (t *Task) Running() bool {
+	t.runningMu.RLock()
+	defer t.runningMu.RUnlock()
 	if t.running == nil {
 		return false
 	}
@@ -84,11 +88,14 @@ func (t *Task) Running() bool {
 }
 
 func (t *Task) SetRunning(running *bool) {
-
+	t.runningMu.Lock()
+	defer t.runningMu.Unlock()
 	t.running = running
 }
 
 func (t *Task) SetRunningTrue() {
+	t.runningMu.Lock()
+	defer t.runningMu.Unlock()
 	if t.running == nil {
 		t.running = new(bool)
 	}
@@ -97,6 +104,8 @@ func (t *Task) SetRunningTrue() {
 }
 
 func (t *Task) SetRunningFalse() {
+	t.runningMu.Lock()
+	defer t.runningMu.Unlock()
 	if t.running == nil {
 		t.running = new(bool)
 	}
@@ -111,6 +120,7 @@ func (t *Task) CtxDone() <-chan struct{} {
 // The panic is caught by a recover
 func (t *Task) Sleep(timeout time.Duration) {
 	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 	select {
 	case <-timer.C:
 		return
@@ -140,6 +150,7 @@ func (t *Task) WaitUntil(entityID string, eval []string, timeout time.Duration) 
 	}
 	if timeout > 0 {
 		timer := time.NewTimer(timeout)
+		defer timer.Stop()
 		select {
 		case <-t.waitDone:
 			// t.States = t.gs.GetStates(t.states)

@@ -13,6 +13,7 @@ func Run(ctx context.Context, ws *hass_ws.Client, logger *slog.Logger, sChan Cha
 	chanBuffer := make(map[string]services.Service)
 	ticker := time.NewTicker(time.Millisecond * 100)
 	go func() {
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():

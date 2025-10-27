@@ -17,9 +17,21 @@ func (gs *GoScript) messageHandler() {
 				return
 			case m := <-gs.requests.Chan():
 				if m.To == "goscript" {
-					err := gs.handleMessage(m)
-					if err != nil {
-						gs.Logger().Error(err.Error())
+					// Process message with timeout protection
+					done := make(chan error, 1)
+					go func() {
+						done <- gs.handleMessage(m)
+					}()
+
+					select {
+					case err := <-done:
+						if err != nil {
+							gs.Logger().Error(err.Error())
+						}
+					case <-time.After(30 * time.Second):
+						gs.Logger().Error("message handling timed out after 30 seconds", "from", m.From)
+					case <-gs.ctx.Done():
+						return
 					}
 				} else {
 					panic("not done message handler")

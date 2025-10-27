@@ -151,6 +151,11 @@ func (gs *GoScript) Connect() error {
 	for moduleName := range gs.config.Modules {
 		if m, ok := gs.config.Modules[moduleName]; ok {
 			go func(moduleName string, m module.Module) {
+				defer func() {
+					if r := recover(); r != nil {
+						gs.logger.Error(fmt.Sprintf("module %s panicked", moduleName), "panic", r)
+					}
+				}()
 				err := m.Run()
 				if err != nil {
 					gs.logger.Error(fmt.Sprintf("could not run module %s", moduleName), "error", err.Error())
@@ -188,6 +193,7 @@ func (gs *GoScript) runFunctions() {
 		gs.logger.Info("runFunctions exited")
 	}()
 	timer := time.NewTicker(10 * time.Millisecond)
+	defer timer.Stop()
 	for {
 		select {
 		case <-gs.ctx.Done():
