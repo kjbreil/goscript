@@ -2,6 +2,7 @@ package homekit
 
 import (
 	"context"
+
 	"github.com/brutella/hap"
 	"github.com/brutella/hap/accessory"
 )
@@ -26,7 +27,7 @@ func New(mainCtx context.Context) *HomeKit {
 	}
 }
 
-// Run starts the HomeKit server or restarts the homekit server with new accessories
+// Run starts the HomeKit server or restarts the homekit server with new accessories.
 func (h *HomeKit) Run(accs []*accessory.A) error {
 	if h.ctx.Err() != nil {
 		if h.mainCtx.Err() != nil {

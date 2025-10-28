@@ -2,11 +2,12 @@ package cover
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/brutella/hap/accessory"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/iancoleman/strcase"
 	hassentity "github.com/kjbreil/hass-mqtt/entities"
-	"strings"
 )
 
 type Cover struct {

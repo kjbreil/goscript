@@ -39,7 +39,6 @@ func (gs *GoScript) messageHandler() {
 			}
 		}
 	}()
-
 }
 
 func (gs *GoScript) handleMessage(m control.Request) error {

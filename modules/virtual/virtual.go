@@ -33,7 +33,6 @@ func (v *Virtual) Run() error {
 		dev.Add(light)
 		gd := device.NewDevice(dev)
 		devices.AddDevice(gd)
-
 	}
 	for n := range v.BinarySensors {
 		snakeName := strcase.ToSnake(n)
@@ -53,7 +52,6 @@ func (v *Virtual) Run() error {
 				time.Sleep(1 * time.Second)
 				bs.State("OFF")
 			}
-
 		}()
 		devices.AddDevice(gd)
 	}

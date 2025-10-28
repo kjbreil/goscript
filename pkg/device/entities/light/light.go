@@ -105,7 +105,6 @@ func WithHomeKit() func(*Light) {
 
 func WithCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light) {
 	return func(l *Light) {
-
 		if l.homekitAccessory != nil {
 			fnPass := tr.Func
 			tr.Func = func(t *trigger.Task) {
@@ -143,7 +142,6 @@ func WithBrightnessCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light
 		}
 
 		l.homekitAccessory.Lightbulb.Brightness.OnValueRemoteUpdate(func(v int) {
-
 			brightness := float64(v) / 100 * 255
 			l.hass.Brightness(strconv.Itoa(int(brightness)))
 		})

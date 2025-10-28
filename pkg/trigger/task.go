@@ -47,8 +47,8 @@ func New(tr *Trigger) *Task {
 	return &Task{
 		states:      tr.States,
 		f:           tr.Func,
-		waitRequest: make(chan *Trigger, 1),  // Buffered to prevent deadlock
-		waitDone:    make(chan bool, 1),      // Buffered to prevent deadlock
+		waitRequest: make(chan *Trigger, 1), // Buffered to prevent deadlock
+		waitDone:    make(chan bool, 1),     // Buffered to prevent deadlock
 	}
 }
 
@@ -117,7 +117,7 @@ func (t *Task) CtxDone() <-chan struct{} {
 }
 
 // Sleep waits for the timeout to occur and panics if the context is cancelled
-// The panic is caught by a recover
+// The panic is caught by a recover.
 func (t *Task) Sleep(timeout time.Duration) {
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
@@ -130,20 +130,19 @@ func (t *Task) Sleep(timeout time.Duration) {
 	}
 }
 
-// Context return the current tasks context
+// Context return the current tasks context.
 func (t *Task) Context() context.Context {
 	return t.ctx
 }
 
-// UUID return the current tasks uuid
+// UUID return the current tasks uuid.
 func (t *Task) UUID() uuid.UUID {
 	return t.uuid
 }
 
 // WaitUntil waits until the eval equals true. Timeout of 0 means no timeout
-// panics if the context is cancelled
+// panics if the context is cancelled.
 func (t *Task) WaitUntil(entityID string, eval []string, timeout time.Duration) bool {
-
 	t.waitRequest <- &Trigger{
 		Triggers: []string{entityID},
 		Eval:     eval,
@@ -171,13 +170,13 @@ func (t *Task) WaitUntil(entityID string, eval []string, timeout time.Duration) 
 	}
 }
 
-// WhileFunc is the function that runs inside of a task.While on a continuous loop until the while evals false
+// WhileFunc is the function that runs inside of a task.While on a continuous loop until the while evals false.
 type WhileFunc func()
 
 // While runs a function until the eval does not evaluate true
 // panics if the context is cancelled
 // take care to use a sleep within the whileFunc
-// best to keep the function inline so task.Sleep can be used
+// best to keep the function inline so task.Sleep can be used.
 func (t *Task) While(entityID string, ev []string, whileFunc WhileFunc) {
 	for {
 		if t.ctx.Err() != nil {

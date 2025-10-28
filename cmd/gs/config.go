@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/goccy/go-yaml"
 	"os"
+
+	"github.com/goccy/go-yaml"
 )
 
 func parseConfig(filename string) (map[string]string, error) {
@@ -23,15 +24,13 @@ func parseConfig(filename string) (map[string]string, error) {
 		switch vv := v.(type) {
 		case map[string]any:
 			if r, ok := vv["repo"]; ok {
-				switch r.(type) {
+				switch r := r.(type) {
 				case string:
-					modules[k] = r.(string)
+					modules[k] = r
 				default:
 					return nil, fmt.Errorf("repo for %s not string", k)
 				}
-
 			}
-
 		}
 	}
 

@@ -71,7 +71,7 @@ func (ss *States) Len() int {
 	return len(ss.s)
 }
 
-// Insert only adds to the map if something does not exist already. Returns what is in the map whether added or not
+// Insert only adds to the map if something does not exist already. Returns what is in the map whether added or not.
 func (ss *States) Insert(ps *State) *State {
 	ss.m.Lock()
 	defer ss.m.Unlock()
@@ -84,7 +84,7 @@ func (ss *States) Insert(ps *State) *State {
 	}
 }
 
-// Upsert inserts a new record if one does not exist otherwise updates the data at the pointer so the update propagates
+// Upsert inserts a new record if one does not exist otherwise updates the data at the pointer so the update propagates.
 func (ss *States) Upsert(ps *State) *State {
 	ss.m.Lock()
 	defer ss.m.Unlock()
@@ -98,7 +98,7 @@ func (ss *States) Upsert(ps *State) *State {
 }
 
 // Combine takes two States objects and merges them, passed object will overwrite a state in current object
-// To avoid deadlocks, we first create a copy of cs's data, then merge it into ss
+// To avoid deadlocks, we first create a copy of cs's data, then merge it into ss.
 func (ss *States) Combine(cs *States) {
 	// First, get a copy of cs's data while holding only cs's lock
 	cs.m.Lock()
@@ -116,7 +116,7 @@ func (ss *States) Combine(cs *States) {
 	}
 }
 
-// Entities returns a string of the entities contained in the States object
+// Entities returns a string of the entities contained in the States object.
 func (ss *States) Entities() []string {
 	ss.m.Lock()
 	defer ss.m.Unlock()
@@ -128,7 +128,7 @@ func (ss *States) Entities() []string {
 	return en
 }
 
-// Get returns a single state record and a bool if found
+// Get returns a single state record and a bool if found.
 func (ss *States) Get(key string) (*State, bool) {
 	ss.m.Lock()
 	defer ss.m.Unlock()
@@ -140,7 +140,7 @@ func (ss *States) Get(key string) (*State, bool) {
 	return st, true
 }
 
-// Find returns a new map of states of the passed entities
+// Find returns a new map of states of the passed entities.
 func (ss *States) Find(entities []string) map[string]*State {
 	ss.m.Lock()
 	defer ss.m.Unlock()
@@ -156,7 +156,7 @@ func (ss *States) Find(entities []string) map[string]*State {
 	return sss
 }
 
-// FindDomainMap returns a map of the states for the passed domain
+// FindDomainMap returns a map of the states for the passed domain.
 func (ss *States) FindDomainMap(keys []string) map[string]*State {
 	ss.m.Lock()
 	defer ss.m.Unlock()
@@ -174,7 +174,7 @@ func (ss *States) FindDomainMap(keys []string) map[string]*State {
 	return sss
 }
 
-// Slice returns a slice of the states in no particular order
+// Slice returns a slice of the states in no particular order.
 func (ss *States) Slice() []*State {
 	ss.m.Lock()
 	defer ss.m.Unlock()
@@ -187,7 +187,7 @@ func (ss *States) Slice() []*State {
 	return sss
 }
 
-// Map returns a map of all the states
+// Map returns a map of all the states.
 func (ss *States) Map() map[string]*State {
 	ss.m.Lock()
 	defer ss.m.Unlock()
@@ -212,7 +212,7 @@ func (ss *States) Iterate(yield func(key string, st *State) bool) {
 	}
 }
 
-// SubSet returns a new States which contains a subset of the current states based on entities passed
+// SubSet returns a new States which contains a subset of the current states based on entities passed.
 func (ss *States) SubSet(entities []string) States {
 	return States{
 		s: ss.Find(entities),

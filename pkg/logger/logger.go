@@ -88,7 +88,6 @@ func (h *Handler) computeAttrs(ctx context.Context, r slog.Record) (map[string]a
 }
 
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
-
 	var level string
 	levelAttr := slog.Attr{
 		Key:   slog.LevelKey,

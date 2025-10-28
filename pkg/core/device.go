@@ -5,7 +5,6 @@ import (
 )
 
 func (gs *GoScript) AddDevice(dev *device.Device) error {
-
 	err := gs.mqtt.Add(dev.Dev())
 	if err != nil {
 		return err

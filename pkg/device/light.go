@@ -1,7 +1,6 @@
 package device
 
 import (
-	"fmt"
 	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -32,7 +31,7 @@ func NewLight(
 	snakeName := strcase.ToSnake(l.name)
 	readableName := strings.Title(strings.ReplaceAll(snakeName, "_", " "))
 
-	mainDevice := hassdevice.New(readableName, fmt.Sprintf("%s", snakeName), "Group Lights 2000", "GoScript", "0.0.2")
+	mainDevice := hassdevice.New(readableName, snakeName, "Group Lights 2000", "GoScript", "0.0.2")
 
 	l.dev = mainDevice
 

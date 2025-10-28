@@ -41,7 +41,10 @@ func genMain(filename string, modules map[string]string) (*File, error) {
 		Line(),
 
 		Id("done").Op(":=").Make(List(Chan().Qual("os", "Signal"), Lit(1))),
-		Qual("os/signal", "Notify").Call(Id("done"), Qual("os", "Interrupt"), Qual("syscall", "SIGINT"), Qual("syscall", "SIGTERM")),
+		Qual(
+			"os/signal",
+			"Notify",
+		).Call(Id("done"), Qual("os", "Interrupt"), Qual("syscall", "SIGINT"), Qual("syscall", "SIGTERM")),
 		Id("gs").Dot("Logger").Call().Dot("Info").Call(Lit("Everything is set up")),
 		Line(),
 

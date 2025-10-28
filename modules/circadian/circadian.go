@@ -1,7 +1,7 @@
 package circadian
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"time"
 
@@ -31,14 +31,13 @@ type Circadian struct {
 
 func (c *Circadian) Run() error {
 	if c.Lat == 0 && c.Long == 0 {
-		return fmt.Errorf("circadian requires lat and long")
+		return errors.New("circadian requires lat and long")
 	}
 	return nil
 }
 
 func (c *Circadian) Triggers() trigger.Triggers {
 	return nil
-
 }
 
 func (c *Circadian) Update() error {
@@ -51,7 +50,6 @@ func (c *Circadian) Name() string {
 
 func (c *Circadian) Close() error {
 	return nil
-
 }
 
 func (c *Circadian) ChangeEnough(temperature, brightness float64) bool {
@@ -60,7 +58,6 @@ func (c *Circadian) ChangeEnough(temperature, brightness float64) bool {
 
 	return math.Abs(temperature-c.currentTemperature) <= temperatureStepSize &&
 		math.Abs(brightness-c.currentBrightnessPct) <= brightnessStepSize
-
 }
 
 func (c *Circadian) Calculate() (float64, float64) {
@@ -106,7 +103,6 @@ func (c *Circadian) TurnOn(t *trigger.Task, entities ...string) {
 		BrightnessPct(c.BrightnessPct()).
 		Transition(c.Transition).
 		TurnOn(t, entities)
-
 }
 
 func (c *Circadian) TurnOnTemperature(t *trigger.Task, entities ...string) {

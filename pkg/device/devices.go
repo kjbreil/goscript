@@ -2,6 +2,7 @@ package device
 
 import (
 	"fmt"
+
 	"github.com/brutella/hap/accessory"
 )
 

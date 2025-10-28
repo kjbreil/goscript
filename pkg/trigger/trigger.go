@@ -140,7 +140,7 @@ func (tr *Trigger) UUID() uuid.UUID {
 }
 
 func (tr *Trigger) Evaluate(message *model.Message) bool {
-	passed := !(len(tr.Eval) > 0)
+	passed := len(tr.Eval) <= 0
 
 	states := state.NewSingleStates(message.DomainEntity(), state.MessageState(message))
 

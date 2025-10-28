@@ -46,7 +46,6 @@ func (l *Lights) Close() error {
 }
 
 func (l *Lights) Update() error {
-
 	return nil
 }
 func (l *Lights) Name() string {

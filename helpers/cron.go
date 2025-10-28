@@ -1,12 +1,14 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
-	"github.com/adhocore/gronx"
 	"slices"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/adhocore/gronx"
 )
 
 func TimeToCron(t time.Time) string {
@@ -37,7 +39,7 @@ func CronToSegments(cron string) ([6]int, error) {
 		return segs, err
 	}
 	if len(segments) != 6 {
-		return segs, fmt.Errorf("cron segments must be 6")
+		return segs, errors.New("cron segments must be 6")
 	}
 
 	for i := range segs {
@@ -56,7 +58,7 @@ func CronToSegments(cron string) ([6]int, error) {
 	return segs, nil
 }
 
-// LastValidCron returns the last valid cron for the given crons and time
+// LastValidCron returns the last valid cron for the given crons and time.
 func LastValidCron(crons []string, t time.Time) (string, error) {
 	crons = SortCronJobs(crons)
 
@@ -153,7 +155,6 @@ func SortCronJobs(expressions []string) []string {
 	nextTicks := make([]cronNextTick, len(expressions))
 
 	for i := range expressions {
-
 		tickTime, err := gronx.NextTickAfter(expressions[i], zeroDay, true)
 		if err != nil {
 			panic(err)

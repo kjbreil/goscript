@@ -64,7 +64,6 @@ func (c *Config) GetModule(key string) (interface{}, error) {
 }
 
 func ParseConfig(filename string, modules []module.Module) (*Config, error) {
-
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -80,7 +79,6 @@ func ParseConfig(filename string, modules []module.Module) (*Config, error) {
 var DecodeHookFuncs []mapstructure.DecodeHookFunc
 
 func ParseConfigData(data []byte, modules []module.Module) (*Config, error) {
-
 	var configMap map[string]interface{}
 	err := yaml.Unmarshal(data, &configMap)
 	if err != nil {
@@ -153,7 +151,7 @@ func configDecoder(results interface{}) (*mapstructure.Decoder, error) {
 	})
 }
 
-// stringToTimeHookFunc decodes either a simple time as am/pm or a RFC3339 formated time
+// stringToTimeHookFunc decodes either a simple time as am/pm or a RFC3339 formated time.
 func stringToTimeHookFunc() mapstructure.DecodeHookFunc {
 	return func(
 		f reflect.Type,

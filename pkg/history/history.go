@@ -34,7 +34,6 @@ func (hs *Histories) Get(domain, entity string) *History {
 
 // At returns the two states surrounding the given time.
 func (h *History) At(t time.Time) (before, after *state.State) {
-
 	for _, s := range h.States {
 		if s.LastChanged.After(t) {
 			return before, s

@@ -16,12 +16,12 @@ import (
 	"github.com/kjbreil/goscript/pkg/state"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	hassmqtt "github.com/kjbreil/hass-mqtt"
-	hassws "github.com/kjbreil/hass-ws/pkg/hass"
 	"github.com/kjbreil/hass-ws/model"
+	hassws "github.com/kjbreil/hass-ws/pkg/hass"
 	"github.com/kjbreil/hass-ws/services"
 )
 
-// GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant
+// GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant.
 type GoScript struct {
 	config *Config
 	mqtt   *hassmqtt.Client
@@ -48,7 +48,7 @@ type GoScript struct {
 	logger *slog.Logger
 }
 
-// New creates a new GoScript instance
+// New creates a new GoScript instance.
 func New(c *Config, logger *slog.Logger) (*GoScript, error) {
 	var err error
 
@@ -80,7 +80,7 @@ func New(c *Config, logger *slog.Logger) (*GoScript, error) {
 }
 
 // Connect connects to the WebSocket server and MQTT server as setup
-// all options need to be passed before firing connect, anything added after will have odd effects
+// all options need to be passed before firing connect, anything added after will have odd effects.
 func (gs *GoScript) Connect() error {
 	var err error
 
@@ -164,7 +164,6 @@ func (gs *GoScript) Connect() error {
 				}
 			}(moduleName, m)
 		}
-
 	}
 
 	// homekit integration needs to be setup after all modules have been run because devices cannot be added to homekit
@@ -183,7 +182,7 @@ func (gs *GoScript) CallService(s services.Service) *hassws.Response {
 	return gs.ws.CallService(s)
 }
 
-// Logger returns the logr to create your own logs
+// Logger returns the logr to create your own logs.
 func (gs *GoScript) Logger() *slog.Logger {
 	return gs.logger
 }
@@ -206,7 +205,7 @@ func (gs *GoScript) runFunctions() {
 	}
 }
 
-// Close the connections to WebSocket and MQTT
+// Close the connections to WebSocket and MQTT.
 func (gs *GoScript) Close() {
 	for _, m := range gs.config.Modules {
 		m.Close()
@@ -219,7 +218,7 @@ func (gs *GoScript) Close() {
 	}
 }
 
-// GetModule returns the config module in interface{} form, must be cast to module type
+// GetModule returns the config module in interface{} form, must be cast to module type.
 func (gs *GoScript) GetModule(key string) (interface{}, error) {
 	return gs.config.GetModule(key)
 }
@@ -235,7 +234,7 @@ func DefaultLogger() *slog.Logger {
 	return slog.New(logger.NewHandler(os.Stdout, nil))
 }
 
-// DefaultLoggerWithLevel returns a logger with the specified level
+// DefaultLoggerWithLevel returns a logger with the specified level.
 func DefaultLoggerWithLevel(level slog.Level) *slog.Logger {
 	return slog.New(logger.NewHandler(os.Stdout, &slog.HandlerOptions{
 		Level: level,

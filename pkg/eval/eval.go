@@ -57,10 +57,10 @@ func Evaluate(states state.States, eval string) bool {
 		if attr := state.Attributes; attr != nil {
 			for k, v := range attr {
 				for _, c := range program.Constants {
-					switch c.(type) {
+					switch c := c.(type) {
 					case string:
-						if k == c.(string) {
-							env[fmt.Sprintf("%s.%s", state.DomainEntity, c.(string))] = v
+						if k == c {
+							env[fmt.Sprintf("%s.%s", state.DomainEntity, c)] = v
 						}
 					}
 				}

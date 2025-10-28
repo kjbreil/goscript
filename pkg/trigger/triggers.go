@@ -7,7 +7,7 @@ import (
 	"github.com/kjbreil/hass-ws/model"
 )
 
-// AddTrigger adds a trigger to the trigger map. There is no validation of a
+// AddTrigger adds a trigger to the trigger map. There is no validation of a.
 func (r *Runner) AddTrigger(tr *Trigger) {
 	tr = SetupTrigger(tr)
 	r.triggerMu.Lock()
@@ -55,7 +55,7 @@ func (r *Runner) RemoveTrigger(t *Trigger) {
 	}
 }
 
-// AddTriggers helper function to add multiple triggers
+// AddTriggers helper function to add multiple triggers.
 func (r *Runner) AddTriggers(triggers ...*Trigger) {
 	for _, t := range triggers {
 		r.AddTrigger(t)

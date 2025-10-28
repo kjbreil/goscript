@@ -65,7 +65,7 @@ func (r *Requests) Chan() chan Request {
 	return r.channel
 }
 
-// Send sends a request with backpressure warning
+// Send sends a request with backpressure warning.
 func (r *Requests) Send(req Request) {
 	// Warn if channel is getting full (>80% capacity)
 	if r.logger != nil && len(r.channel) > 800 {

@@ -5,7 +5,7 @@ import (
 	"github.com/kjbreil/goscript/pkg/trigger"
 )
 
-// SubscribeMqtt subscribes to a top with a trigger
+// SubscribeMqtt subscribes to a top with a trigger.
 func (gs *GoScript) SubscribeMqtt(topic string, qos byte, tr *trigger.Trigger) {
 	tr = trigger.SetupTrigger(tr)
 
@@ -16,7 +16,7 @@ func (gs *GoScript) SubscribeMqtt(topic string, qos byte, tr *trigger.Trigger) {
 	})
 }
 
-// TaskMQTT wraps a trigger and TaskFunc setting up and passing the task through
+// TaskMQTT wraps a trigger and TaskFunc setting up and passing the task through.
 func (gs *GoScript) TaskMQTT(tr *trigger.Trigger) func(message mqtt.Message, client mqtt.Client) {
 	// setup the trigger
 	tr = trigger.SetupTrigger(tr)

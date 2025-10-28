@@ -2,14 +2,13 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 )
 
 var (
-	ErrAlreadyExists = fmt.Errorf("already exists")
+	ErrAlreadyExists = errors.New("already exists")
 )
 
 var coreLibraries = []string{

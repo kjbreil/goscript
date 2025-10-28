@@ -22,7 +22,13 @@ func (l *Light) Transition(transition float64) *Light {
 	return l
 }
 
-func (l *Light) repeatService(state string, fn func(t *trigger.Task, entities []string), t *trigger.Task, entities []string, lightService services.Service) {
+func (l *Light) repeatService(
+	state string,
+	fn func(t *trigger.Task, entities []string),
+	t *trigger.Task,
+	entities []string,
+	lightService services.Service,
+) {
 	if t.Cancelled() {
 		panic(fmt.Sprintf("task context cancelled for %s", t.UUID()))
 	}

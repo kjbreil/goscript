@@ -74,7 +74,15 @@ func (tm *TaskMap) Add(t *Task) {
 	// Warn if queue is getting large
 	if tm.logger != nil {
 		if currentLen > MaxTasksPerUUID {
-			tm.logger.Error("task queue exceeded maximum", "uuid", t.UUID(), "queued", currentLen, "max", MaxTasksPerUUID)
+			tm.logger.Error(
+				"task queue exceeded maximum",
+				"uuid",
+				t.UUID(),
+				"queued",
+				currentLen,
+				"max",
+				MaxTasksPerUUID,
+			)
 			return // Drop task to prevent unbounded growth
 		} else if currentLen > MaxTasksPerUUID/2 {
 			tm.logger.Warn("task queue growing large", "uuid", t.UUID(), "queued", currentLen, "max", MaxTasksPerUUID)

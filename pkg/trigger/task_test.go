@@ -7,7 +7,6 @@ import (
 )
 
 func TestTask_Sleep(t *testing.T) {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	task := &Task{
 		ctx:    ctx,

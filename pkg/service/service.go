@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
-	hass_ws "github.com/kjbreil/hass-ws/pkg/hass"
-	"github.com/kjbreil/hass-ws/services"
 	"log/slog"
 	"strings"
 	"time"
+
+	hass_ws "github.com/kjbreil/hass-ws/pkg/hass"
+	"github.com/kjbreil/hass-ws/services"
 )
 
 func Run(ctx context.Context, ws *hass_ws.Client, logger *slog.Logger, sChan Chan) {
@@ -30,5 +31,4 @@ func Run(ctx context.Context, ws *hass_ws.Client, logger *slog.Logger, sChan Cha
 			}
 		}
 	}()
-
 }
