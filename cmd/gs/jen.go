@@ -1,61 +1,61 @@
 package main
 
 import (
-	. "github.com/dave/jennifer/jen"
+	"github.com/dave/jennifer/jen"
 	"github.com/iancoleman/strcase"
 )
 
-func genMain(filename string, modules map[string]string) (*File, error) {
-	f := NewFile("main")
+func genMain(filename string, modules map[string]string) (*jen.File, error) {
+	f := jen.NewFile("main")
 	f.Func().Id("main").Params().Block(
-		Id("ms").Op(":=").Index().
+		jen.Id("ms").Op(":=").Index().
 			Qual("github.com/kjbreil/goscript/pkg/module", "Module").
-			ValuesFunc(func(group *Group) {
+			ValuesFunc(func(group *jen.Group) {
 				for k, v := range modules {
-					group.Add(Op("&")).Qual(v, strcase.ToCamel(k)).Block()
+					group.Add(jen.Op("&")).Qual(v, strcase.ToCamel(k)).Block()
 				}
 			}),
-		List(Id("config"), Err()).Op(":=").
+		jen.List(jen.Id("config"), jen.Err()).Op(":=").
 			Qual("github.com/kjbreil/goscript/pkg/core", "ParseConfig").
-			Call(Lit(filename), Id("ms")),
+			Call(jen.Lit(filename), jen.Id("ms")),
 		ifError(),
-		Line(),
+		jen.Line(),
 
-		List(Id("gs"), Err()).Op(":=").
+		jen.List(jen.Id("gs"), jen.Err()).Op(":=").
 			Qual("github.com/kjbreil/goscript/pkg/core", "New").
-			Call(List(Id("config"), Qual("github.com/kjbreil/goscript/pkg/core", "DefaultLogger").Call())),
+			Call(jen.List(jen.Id("config"), jen.Qual("github.com/kjbreil/goscript/pkg/core", "DefaultLogger").Call())),
 		ifError(),
-		Line(),
+		jen.Line(),
 
-		Id("gs").Dot("UpdateModule").
-			CallFunc(func(group *Group) {
+		jen.Id("gs").Dot("UpdateModule").
+			CallFunc(func(group *jen.Group) {
 				for k, v := range modules {
-					group.Add(List(Lit(k), Qual("github.com/kjbreil/goscript/pkg/core", "GetModule").
-						Types(Op("*").Qual(v, strcase.ToCamel(k))).
-						Call(List(Id("gs"), Lit(k))),
+					group.Add(jen.List(jen.Lit(k), jen.Qual("github.com/kjbreil/goscript/pkg/core", "GetModule").
+						Types(jen.Op("*").Qual(v, strcase.ToCamel(k))).
+						Call(jen.List(jen.Id("gs"), jen.Lit(k))),
 					))
 				}
 			}),
-		Err().Op("=").Id("gs").Dot("Connect").Call(),
+		jen.Err().Op("=").Id("gs").Dot("Connect").Call(),
 		ifError(),
-		Line(),
+		jen.Line(),
 
-		Id("done").Op(":=").Make(List(Chan().Qual("os", "Signal"), Lit(1))),
-		Qual(
+		jen.Id("done").Op(":=").Make(jen.List(jen.Chan().Qual("os", "Signal"), jen.Lit(1))),
+		jen.Qual(
 			"os/signal",
 			"Notify",
-		).Call(Id("done"), Qual("os", "Interrupt"), Qual("syscall", "SIGINT"), Qual("syscall", "SIGTERM")),
-		Id("gs").Dot("Logger").Call().Dot("Info").Call(Lit("Everything is set up")),
-		Line(),
+		).Call(jen.Id("done"), jen.Qual("os", "Interrupt"), jen.Qual("syscall", "SIGINT"), jen.Qual("syscall", "SIGTERM")),
+		jen.Id("gs").Dot("Logger").Call().Dot("Info").Call(jen.Lit("Everything is set up")),
+		jen.Line(),
 
-		Op("<-").Id("done"),
-		Id("gs").Dot("Close").Call(),
+		jen.Op("<-").Id("done"),
+		jen.Id("gs").Dot("Close").Call(),
 	)
 	return f, nil
 }
 
-func ifError() *Statement {
-	return If(Err().Op("!=").Nil()).Block(
-		Panic(Err()),
+func ifError() *jen.Statement {
+	return jen.If(jen.Err().Op("!=").Nil()).Block(
+		jen.Panic(jen.Err()),
 	)
 }

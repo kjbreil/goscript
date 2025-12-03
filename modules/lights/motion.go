@@ -11,6 +11,10 @@ import (
 	"github.com/kjbreil/goscript/pkg/trigger"
 )
 
+const (
+	fullBrightnessPct = 100
+)
+
 type motionLight struct {
 	logger logr.Logger
 	cir    *circadian.Circadian
@@ -35,10 +39,11 @@ func (l *Lights) motion() trigger.Triggers {
 }
 
 func (l *Lights) mlTrigger(ml *motionLight) *trigger.Trigger {
+	//nolint:exhaustruct // Trigger is set up with required fields; others initialized by SetupTrigger
 	return &trigger.Trigger{
 		Triggers: ml.Detectors,
 
-		Unique: &trigger.Unique{},
+		Unique: &trigger.Unique{}, //nolint:exhaustruct // Unique fields are initialized by SetupTrigger
 		States: append(ml.Entities, ml.BlockIfOn...),
 		Eval:   eval.Eval(`state == "on"`),
 		Func: func(t *trigger.Task) {
@@ -55,7 +60,7 @@ func (l *Lights) mlTrigger(ml *motionLight) *trigger.Trigger {
 					l.cir.TurnOn(t, ml.Entities...)
 				} else {
 					light.New().
-						BrightnessPct(100).
+						BrightnessPct(fullBrightnessPct).
 						TurnOn(t, ml.Entities)
 				}
 			} else {

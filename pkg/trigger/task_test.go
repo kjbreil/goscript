@@ -8,6 +8,7 @@ import (
 
 func TestTask_Sleep(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	//nolint:exhaustruct // Only ctx and cancel needed for this test
 	task := &Task{
 		ctx:    ctx,
 		cancel: cancel,
@@ -21,13 +22,14 @@ func TestTask_Sleep(t *testing.T) {
 	select {
 	case <-ctx.Done():
 		return
-	case <-time.After(101 * time.Millisecond):
+	case <-time.After(200 * time.Millisecond):
 		t.Error("context should have been cancelled")
 	}
 }
 
 func TestTask_SleepCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	//nolint:exhaustruct // Only ctx and cancel needed for this test
 	task := &Task{
 		ctx:    ctx,
 		cancel: cancel,

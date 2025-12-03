@@ -6,8 +6,8 @@ func (ss *States) GetDomainStates(domainentity []string) *States {
 	return &rtn
 }
 
-func (ss *States) GetState(entityId string) *State {
-	s, _ := ss.Get(entityId)
+func (ss *States) GetState(entityID string) *State {
+	s, _ := ss.Get(entityID)
 	return s
 }
 

@@ -11,6 +11,15 @@ import (
 	"github.com/sixdouglas/suncalc"
 )
 
+const (
+	percentageDivisor    = 100.0
+	altitudeScaleFactor  = 10000.0
+	minAltitudeRange     = -80.0
+	maxAltitudeRangeTemp = 100.0
+	minAltitudeRangeBri  = -50.0
+	maxAltitudeRangeBri  = 100.0
+)
+
 var key = "circadian"
 
 type Circadian struct {
@@ -53,8 +62,8 @@ func (c *Circadian) Close() error {
 }
 
 func (c *Circadian) ChangeEnough(temperature, brightness float64) bool {
-	brightnessStepSize := (c.MaxBrightnessPct - c.MinBrightnessPct) / 100
-	temperatureStepSize := (c.MaxTemperature - c.MinTemperature) / 100
+	brightnessStepSize := (c.MaxBrightnessPct - c.MinBrightnessPct) / percentageDivisor
+	temperatureStepSize := (c.MaxTemperature - c.MinTemperature) / percentageDivisor
 
 	return math.Abs(temperature-c.currentTemperature) <= temperatureStepSize &&
 		math.Abs(brightness-c.currentBrightnessPct) <= brightnessStepSize
@@ -71,10 +80,18 @@ func (c *Circadian) Calculate() (float64, float64) {
 
 	// azPct := (currentPos.Azimuth * 180 / math.Pi) / (noonPos.Azimuth * 180 / math.Pi)
 	// altPct := (currentPos.Altitude / noonPos.Altitude) * 100
-	altPct := math.Round((currentPos.Altitude*180/math.Pi)/(noonPos.Altitude*180/math.Pi)*10000) / 100
+	altPct := math.Round(
+		(currentPos.Altitude*180/math.Pi)/(noonPos.Altitude*180/math.Pi)*altitudeScaleFactor,
+	) / percentageDivisor
 
-	c.currentTemperature = mapRange(-80, 100, c.MaxTemperature, c.MinTemperature, altPct)
-	c.currentBrightnessPct = mapRange(-50, 100, c.MinBrightnessPct, c.MaxBrightnessPct, altPct)
+	c.currentTemperature = mapRange(minAltitudeRange, maxAltitudeRangeTemp, c.MaxTemperature, c.MinTemperature, altPct)
+	c.currentBrightnessPct = mapRange(
+		minAltitudeRangeBri,
+		maxAltitudeRangeBri,
+		c.MinBrightnessPct,
+		c.MaxBrightnessPct,
+		altPct,
+	)
 	c.within()
 
 	return c.currentTemperature, c.currentBrightnessPct

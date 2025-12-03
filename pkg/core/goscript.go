@@ -21,6 +21,12 @@ import (
 	"github.com/kjbreil/hass-ws/services"
 )
 
+const (
+	serviceChannelSize   = 100
+	initialSleepDuration = 100 * time.Millisecond
+	taskCheckInterval    = 10 * time.Millisecond
+)
+
 // GoScript is the base type for GoScript holding all the state and functionality for interacting with Home Assistant.
 type GoScript struct {
 	config *Config
@@ -52,6 +58,7 @@ type GoScript struct {
 func New(c *Config, logger *slog.Logger) (*GoScript, error) {
 	var err error
 
+	//nolint:exhaustruct // GoScript is progressively initialized; remaining fields set after this point
 	gs := &GoScript{
 		config:   c,
 		logger:   logger,
@@ -61,17 +68,17 @@ func New(c *Config, logger *slog.Logger) (*GoScript, error) {
 
 	gs.mqtt, err = hassmqtt.NewClientWithLogger(*gs.config.MQTT, gs.logger)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create MQTT client: %w", err)
 	}
 
 	gs.ws, err = hassws.NewClientWithLogger(gs.config.Websocket, gs.logger)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create WebSocket client: %w", err)
 	}
 	gs.ws.Logger()
 	gs.states = state.NewStates()
 
-	gs.ServiceChan = make(chan services.Service, 100)
+	gs.ServiceChan = make(chan services.Service, serviceChannelSize)
 
 	gs.Runner = trigger.NewRunner(gs.ctx, &gs.states, gs.ServiceChan, gs.logger)
 	gs.devices = device.NewDevices()
@@ -85,10 +92,10 @@ func (gs *GoScript) Connect() error {
 	var err error
 
 	// initialize the modules
-	for _, m := range gs.config.Modules {
+	for name, m := range gs.config.Modules {
 		err = m.Init(gs.ctx, gs.requests, gs.logger)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to initialize module %q: %w", name, err)
 		}
 		// for _, t := range m.Triggers() {
 		// 	gs.Runner.AddTrigger(t)
@@ -102,7 +109,7 @@ func (gs *GoScript) Connect() error {
 		err = gs.mqtt.Connect()
 		if err != nil {
 			if !errors.Is(err, hassmqtt.ErrNoDeviceFound) {
-				return err
+				return fmt.Errorf("failed to connect to MQTT: %w", err)
 			}
 		}
 		gs.logger.Info("MQTT connected")
@@ -132,13 +139,13 @@ func (gs *GoScript) Connect() error {
 
 	err = gs.ws.Connect()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to WebSocket: %w", err)
 	}
 	gs.logger.Info("Websocket connected")
 
 	gs.fillAreaRegistry()
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(initialSleepDuration)
 
 	go gs.runFunctions()
 
@@ -191,7 +198,7 @@ func (gs *GoScript) runFunctions() {
 	defer func() {
 		gs.logger.Info("runFunctions exited")
 	}()
-	timer := time.NewTicker(10 * time.Millisecond)
+	timer := time.NewTicker(taskCheckInterval)
 	defer timer.Stop()
 	for {
 		select {
@@ -207,8 +214,10 @@ func (gs *GoScript) runFunctions() {
 
 // Close the connections to WebSocket and MQTT.
 func (gs *GoScript) Close() {
-	for _, m := range gs.config.Modules {
-		m.Close()
+	for name, m := range gs.config.Modules {
+		if err := m.Close(); err != nil {
+			gs.logger.Error("error closing module", "module", name, "error", err.Error())
+		}
 	}
 	gs.cancel()
 	err := gs.ws.Close()
@@ -225,7 +234,10 @@ func (gs *GoScript) GetModule(key string) (interface{}, error) {
 
 func GetModule[T any](gs *GoScript, key string) T {
 	if v, ok := gs.config.Modules[key]; ok {
-		return v.(T)
+		if typed, ok := v.(T); ok {
+			return typed
+		}
+		panic(fmt.Errorf("module %s exists but is not of expected type", key))
 	}
 	panic(ErrModuleNotFound)
 }
@@ -236,6 +248,7 @@ func DefaultLogger() *slog.Logger {
 
 // DefaultLoggerWithLevel returns a logger with the specified level.
 func DefaultLoggerWithLevel(level slog.Level) *slog.Logger {
+	//nolint:exhaustruct // Only Level is set; AddSource and ReplaceAttr use defaults
 	return slog.New(logger.NewHandler(os.Stdout, &slog.HandlerOptions{
 		Level: level,
 	}))

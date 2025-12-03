@@ -2,6 +2,7 @@ package trigger
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -64,7 +65,7 @@ func (tr *Trigger) NextTime(tt time.Time) (*time.Time, error) {
 	nt, err := helpers.NextTime(tr.Periodic, tt)
 	if err != nil {
 		tr.nextTime = nil
-		return nil, err
+		return nil, fmt.Errorf("failed to calculate next time for periodic trigger: %w", err)
 	}
 
 	tr.nextTime = &nt

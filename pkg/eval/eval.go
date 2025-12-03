@@ -1,3 +1,4 @@
+// Package eval provides expression evaluation functionality using the expr library.
 package eval
 
 import (
@@ -7,10 +8,12 @@ import (
 	"github.com/kjbreil/goscript/pkg/state"
 )
 
+// Eval returns the provided expressions as-is for evaluation.
 func Eval(exp ...string) []string {
 	return exp
 }
 
+// Evaluates checks if any of the provided evaluation expressions pass for the given states.
 func Evaluates(states state.States, eval []string) bool {
 	passed := false
 	for _, e := range eval {
@@ -21,6 +24,7 @@ func Evaluates(states state.States, eval []string) bool {
 	return passed
 }
 
+// Evaluate evaluates a single expression against the given states.
 func Evaluate(states state.States, eval string) bool {
 	var passed bool
 
@@ -41,9 +45,9 @@ func Evaluate(states state.States, eval string) bool {
 			if attr := state.Attributes; attr != nil {
 				for k, v := range attr {
 					for _, c := range program.Constants {
-						if _, ok := c.(string); ok {
-							if c.(string) == k {
-								env[c.(string)] = v
+						if cStr, ok := c.(string); ok {
+							if cStr == k {
+								env[cStr] = v
 							}
 						}
 					}
@@ -57,10 +61,9 @@ func Evaluate(states state.States, eval string) bool {
 		if attr := state.Attributes; attr != nil {
 			for k, v := range attr {
 				for _, c := range program.Constants {
-					switch c := c.(type) {
-					case string:
-						if k == c {
-							env[fmt.Sprintf("%s.%s", state.DomainEntity, c)] = v
+					if cStr, ok := c.(string); ok {
+						if k == cStr {
+							env[fmt.Sprintf("%s.%s", state.DomainEntity, cStr)] = v
 						}
 					}
 				}
@@ -74,7 +77,7 @@ func Evaluate(states state.States, eval string) bool {
 		// TODO: Add error to some display
 		return false
 	}
-	if evald.(bool) && !passed {
+	if evaldBool, ok := evald.(bool); ok && evaldBool && !passed {
 		passed = true
 	}
 

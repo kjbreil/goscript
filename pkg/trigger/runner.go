@@ -13,6 +13,11 @@ import (
 	"github.com/kjbreil/goscript/pkg/state"
 )
 
+const (
+	minutesPerHour       = 60
+	taskRunCheckInterval = 100 * time.Millisecond
+)
+
 type Runner struct {
 	// maps holding state based triggers
 	periodic        map[string]Triggers
@@ -32,6 +37,7 @@ type Runner struct {
 }
 
 func NewRunner(ctx context.Context, states *state.States, sChan service.Chan, logger *slog.Logger) *Runner {
+	//nolint:exhaustruct // nextPeriodic and triggerMu initialized with zero values
 	return &Runner{
 		triggers:        make(map[string]Triggers),
 		domainTrigger:   make(map[string]Triggers),
@@ -99,7 +105,7 @@ func (r *Runner) RunPeriodic() {
 }
 
 func (r *Runner) shouldRunTrigger() {
-	r.nextPeriodic = time.Now().Add(60 * time.Minute)
+	r.nextPeriodic = time.Now().Add(minutesPerHour * time.Minute)
 	for _, triggers := range r.periodic {
 		for _, t := range triggers {
 			if t.GetNextTime() == nil {
@@ -155,7 +161,7 @@ func (r *Runner) RunTask(t *Task) {
 	r.logger.Debug(fmt.Sprintf("task started: %s", t.UUID()), "messageEntity", t.Message.DomainEntity())
 
 	for t.Running() {
-		timer := time.NewTimer(100 * time.Millisecond)
+		timer := time.NewTimer(taskRunCheckInterval)
 		select {
 		case <-timer.C:
 			timer.Stop()
@@ -201,7 +207,7 @@ func (r *Runner) taskWaitRequest(t *Task) {
 }
 
 func fillNextTime(periodics map[string]Triggers) (time.Time, error) {
-	next := time.Now().Add(60 * time.Minute)
+	next := time.Now().Add(minutesPerHour * time.Minute)
 	if len(periodics) == 0 {
 		return time.Now().Add(1 * time.Second), nil
 	}

@@ -12,6 +12,7 @@ import (
 
 func SendDevices(m Module, ds *device.Devices) {
 	for _, d := range ds.Slice() {
+		//nolint:exhaustruct // Only To, From, and Device fields needed
 		m.Requests().Chan() <- control.Request{
 			To:      "goscript",
 			From:    m.Name(),
@@ -22,6 +23,7 @@ func SendDevices(m Module, ds *device.Devices) {
 }
 
 func SendDevice(m Module, d *device.Device) {
+	//nolint:exhaustruct // Only To, From, and Device fields needed
 	m.Requests().Chan() <- control.Request{
 		To:      "goscript",
 		From:    m.Name(),
@@ -32,6 +34,7 @@ func SendDevice(m Module, d *device.Device) {
 
 func SendTriggers(m Module, triggers trigger.Triggers) {
 	for _, t := range triggers {
+		//nolint:exhaustruct // Only To, From, and Trigger fields needed
 		m.Requests().Chan() <- control.Request{
 			To:      "goscript",
 			From:    m.Name(),
@@ -41,6 +44,7 @@ func SendTriggers(m Module, triggers trigger.Triggers) {
 }
 
 func SendPublish(m Module, mqttPublish *control.MQTTPublish) {
+	//nolint:exhaustruct // Only To, From, and MQTTPublish fields needed
 	m.Requests().Chan() <- control.Request{
 		To:          "goscript",
 		From:        m.Name(),
@@ -54,6 +58,7 @@ func SendInfo(m Module, msg string) {
 	if ok {
 		caller = file + ":" + strconv.Itoa(line)
 	}
+	//nolint:exhaustruct // Only To, From, and Log fields needed
 	m.Requests().Chan() <- control.Request{
 		To:   "goscript",
 		From: m.Name(),
@@ -70,6 +75,7 @@ func SendErr(m Module, err error, msg string) {
 	if ok {
 		caller = file + ":" + strconv.Itoa(line)
 	}
+	//nolint:exhaustruct // Only To, From, and Log fields needed
 	m.Requests().Chan() <- control.Request{
 		To:   "goscript",
 		From: m.Name(),
@@ -82,6 +88,7 @@ func SendErr(m Module, err error, msg string) {
 }
 
 func SendService(m Module, s services.Service) {
+	//nolint:exhaustruct // Only To, From, and Service fields needed
 	m.Requests().Chan() <- control.Request{
 		To:      "goscript",
 		From:    m.Name(),
@@ -90,6 +97,7 @@ func SendService(m Module, s services.Service) {
 }
 
 func SendServiceCallback(m Module, s services.Service, callback func(rsp control.Response) error) {
+	//nolint:exhaustruct // Only To, From, Service, and Callback fields needed
 	m.Requests().Chan() <- control.Request{
 		To:       "goscript",
 		From:     m.Name(),

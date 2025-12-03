@@ -1,11 +1,14 @@
 package device
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/brutella/hap/accessory"
 	"github.com/iancoleman/strcase"
 	hassdevice "github.com/kjbreil/hass-mqtt/pkg/device"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Device struct {
@@ -26,7 +29,8 @@ func New(
 	entities ...Entity,
 ) *Device {
 	snakeName := strcase.ToSnake(name)
-	readableName := strings.Title(strings.ReplaceAll(snakeName, "_", " "))
+	caser := cases.Title(language.English)
+	readableName := caser.String(strings.ReplaceAll(snakeName, "_", " "))
 
 	mainDevice := hassdevice.New(readableName, snakeName, model, manufacturer, swVersion)
 
@@ -48,6 +52,7 @@ func New(
 }
 
 func NewDevice(dev *hassdevice.Device) *Device {
+	//nolint:exhaustruct // name, model, manufacturer, swVersion not needed for wrapped device
 	return &Device{
 		dev:      dev,
 		entities: make(map[string]Entity),
@@ -66,7 +71,7 @@ func (d *Device) AddEntity(e Entity) error {
 	d.entities[e.GetDomainEntity()] = e
 	err := d.dev.Add(e.GetHassEntity())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to add entity %q to device: %w", e.GetDomainEntity(), err)
 	}
 	return nil
 }

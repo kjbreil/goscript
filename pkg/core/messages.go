@@ -9,6 +9,11 @@ import (
 	"github.com/kjbreil/hass-mqtt/pkg/common"
 )
 
+const (
+	messageHandlerTimeout = 30 * time.Second
+	serviceCallTimeout    = 5 * time.Second
+)
+
 func (gs *GoScript) messageHandler() {
 	go func() {
 		for {
@@ -28,7 +33,7 @@ func (gs *GoScript) messageHandler() {
 						if err != nil {
 							gs.Logger().Error(err.Error())
 						}
-					case <-time.After(30 * time.Second):
+					case <-time.After(messageHandlerTimeout):
 						gs.Logger().Error("message handling timed out after 30 seconds", "from", m.From)
 					case <-gs.ctx.Done():
 						return
@@ -43,6 +48,7 @@ func (gs *GoScript) messageHandler() {
 
 func (gs *GoScript) handleMessage(m control.Request) error {
 	// create the response object to use in the callback
+	//nolint:exhaustruct // Response fields set as needed based on request
 	rsp := control.Response{
 		To:   m.From,
 		From: "goscript",
@@ -74,7 +80,7 @@ func (gs *GoScript) handleMessage(m control.Request) error {
 	// send a service call
 	if m.Service != nil {
 		serviceRespAwait := gs.CallService(*m.Service)
-		serviceResp := serviceRespAwait.Timeout(time.Second * 5)
+		serviceResp := serviceRespAwait.Timeout(serviceCallTimeout)
 		rsp.ServiceRsp = serviceResp
 	}
 
@@ -97,7 +103,7 @@ func (gs *GoScript) handleMessage(m control.Request) error {
 		token.WaitTimeout(common.WaitTimeout)
 
 		if token.Error() != nil {
-			return token.Error()
+			return fmt.Errorf("failed to publish MQTT message to topic %q: %w", m.MQTTPublish.Topic, token.Error())
 		}
 	}
 

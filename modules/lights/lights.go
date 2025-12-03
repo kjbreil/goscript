@@ -1,6 +1,8 @@
 package lights
 
 import (
+	"errors"
+
 	"github.com/kjbreil/goscript/modules/circadian"
 	"github.com/kjbreil/goscript/pkg/control"
 	"github.com/kjbreil/goscript/pkg/module"
@@ -18,14 +20,19 @@ type Lights struct {
 func (l *Lights) Run() error {
 	module.SendTriggers(l, l.motion())
 
+	//nolint:exhaustruct // Only required fields To, From, Module, and Callback are set
 	l.Requests().Chan() <- control.Request{
 		To:      "goscript",
 		From:    key,
 		Trigger: nil,
 		Device:  nil,
-		Module:  &circadian.Circadian{},
+		Module:  &circadian.Circadian{}, //nolint:exhaustruct // Requesting module instance from goscript
 		Callback: func(rsp control.Response) error {
-			l.cir = rsp.Module.(*circadian.Circadian)
+			cir, ok := rsp.Module.(*circadian.Circadian)
+			if !ok {
+				return errors.New("failed to assert Module as *circadian.Circadian")
+			}
+			l.cir = cir
 			for _, ml := range l.MotionLights {
 				ml.cir = l.cir
 			}

@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"reflect"
@@ -66,7 +67,7 @@ func (c *Config) GetModule(key string) (interface{}, error) {
 func ParseConfig(filename string, modules []module.Module) (*Config, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read config file %q: %w", filename, err)
 	}
 
 	c, err := ParseConfigData(data, modules)
@@ -82,7 +83,7 @@ func ParseConfigData(data []byte, modules []module.Module) (*Config, error) {
 	var configMap map[string]interface{}
 	err := yaml.Unmarshal(data, &configMap)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal config data: %w", err)
 	}
 
 	var c Config
@@ -91,12 +92,12 @@ func ParseConfigData(data []byte, modules []module.Module) (*Config, error) {
 	var decoder *mapstructure.Decoder
 	decoder, err = configDecoder(&c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create config decoder: %w", err)
 	}
 
 	err = decoder.Decode(configMap)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode config map: %w", err)
 	}
 
 	for _, m := range modules {
@@ -116,12 +117,12 @@ func (c *Config) decodeModules(configMap map[string]interface{}) error {
 			decoder, err := configDecoder(&v)
 
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create decoder for module %q: %w", k, err)
 			}
 			err = decoder.Decode(m)
 
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to decode module %q: %w", k, err)
 			}
 			c.Modules[k] = v
 		}
@@ -132,7 +133,7 @@ func (c *Config) decodeModules(configMap map[string]interface{}) error {
 func configDecoder(results interface{}) (*mapstructure.Decoder, error) {
 	DecodeHookFuncs = append(DecodeHookFuncs, stringToTimeHookFunc())
 
-	return mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result: results,
 		MatchName: func(mapKey, fieldName string) bool {
 			if strings.EqualFold(mapKey, fieldName) {
@@ -149,6 +150,10 @@ func configDecoder(results interface{}) (*mapstructure.Decoder, error) {
 			DecodeHookFuncs...,
 		),
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mapstructure decoder: %w", err)
+	}
+	return decoder, nil
 }
 
 // stringToTimeHookFunc decodes either a simple time as am/pm or a RFC3339 formated time.
@@ -164,14 +169,31 @@ func stringToTimeHookFunc() mapstructure.DecodeHookFunc {
 			return data, nil
 		}
 
-		if strings.HasSuffix(data.(string), "pm") || strings.HasSuffix(data.(string), "am") {
-			return time.Parse("15:04pm", data.(string))
+		dataStr, ok := data.(string)
+		if !ok {
+			return data, nil
 		}
 
-		if strings.HasSuffix(data.(string), "PM") || strings.HasSuffix(data.(string), "AM") {
-			return time.Parse("15:04PM", data.(string))
+		if strings.HasSuffix(dataStr, "pm") || strings.HasSuffix(dataStr, "am") {
+			parsedTime, err := time.Parse("15:04pm", dataStr)
+			if err != nil {
+				return data, fmt.Errorf("failed to parse time with format 15:04pm: %w", err)
+			}
+			return parsedTime, nil
 		}
 
-		return time.Parse(time.RFC3339, data.(string))
+		if strings.HasSuffix(dataStr, "PM") || strings.HasSuffix(dataStr, "AM") {
+			parsedTime, err := time.Parse("15:04PM", dataStr)
+			if err != nil {
+				return data, fmt.Errorf("failed to parse time with format 15:04PM: %w", err)
+			}
+			return parsedTime, nil
+		}
+
+		parsedTime, err := time.Parse(time.RFC3339, dataStr)
+		if err != nil {
+			return data, fmt.Errorf("failed to parse time with RFC3339 format: %w", err)
+		}
+		return parsedTime, nil
 	}
 }

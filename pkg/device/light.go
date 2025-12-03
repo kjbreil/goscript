@@ -7,6 +7,8 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/kjbreil/hass-mqtt/entities"
 	hassdevice "github.com/kjbreil/hass-mqtt/pkg/device"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Light struct {
@@ -23,13 +25,14 @@ func NewLight(
 	commandFunc func(message mqtt.Message, client mqtt.Client),
 	brightnessFunc func(message mqtt.Message, client mqtt.Client),
 ) (*Light, error) {
+	//nolint:exhaustruct // dev and Device fields initialized after hassdevice.New
 	l := &Light{
 		name:     name,
 		entities: make(map[string]entities.Entity),
 	}
 
 	snakeName := strcase.ToSnake(l.name)
-	readableName := strings.Title(strings.ReplaceAll(snakeName, "_", " "))
+	readableName := cases.Title(language.English).String(strings.ReplaceAll(snakeName, "_", " "))
 
 	mainDevice := hassdevice.New(readableName, snakeName, "Group Lights 2000", "GoScript", "0.0.2")
 

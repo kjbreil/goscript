@@ -6,6 +6,7 @@ import (
 )
 
 func GetHistories(m Module, histories history.GetHistories, channel chan history.Histories) {
+	//nolint:exhaustruct // Only To, From, History, and Callback fields needed
 	m.Requests().Chan() <- control.Request{
 		To:      "goscript",
 		From:    m.Name(),

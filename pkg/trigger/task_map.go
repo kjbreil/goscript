@@ -16,6 +16,7 @@ type TaskMap struct {
 }
 
 func NewTaskMap() TaskMap {
+	//nolint:exhaustruct // logger is optional and may be nil
 	return TaskMap{
 		tasks: make(map[uuid.UUID][]*Task),
 		m:     &sync.Mutex{},

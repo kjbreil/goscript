@@ -11,7 +11,7 @@ import (
 func (gs *GoScript) GetHistory(start, end time.Time, entities ...string) (history.Histories, error) {
 	hs, err := gs.ws.GetHistory(start, end, entities...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get history from websocket: %w", err)
 	}
 	var gsHs history.Histories
 	for _, h := range *hs {

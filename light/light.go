@@ -7,15 +7,19 @@ import (
 	"github.com/kjbreil/hass-ws/services"
 )
 
+// Light provides methods for controlling light entities with turn on/off parameters.
 type Light struct {
 	turnOnParams  services.LightTurnOnParams
 	turnOffParams services.LightTurnOffParams
 }
 
+// New creates a new Light instance with empty turn on/off parameters.
 func New() *Light {
+	//nolint:exhaustruct // turnOnParams and turnOffParams are initialized as needed by method calls
 	return &Light{}
 }
 
+// Transition sets the transition time for turn on/off operations.
 func (l *Light) Transition(transition float64) *Light {
 	l.turnOnParams.Transition = &transition
 	l.turnOffParams.Transition = &transition
@@ -23,10 +27,10 @@ func (l *Light) Transition(transition float64) *Light {
 }
 
 func (l *Light) repeatService(
-	state string,
-	fn func(t *trigger.Task, entities []string),
+	_ string,
+	_ func(t *trigger.Task, entities []string),
 	t *trigger.Task,
-	entities []string,
+	_ []string,
 	lightService services.Service,
 ) {
 	if t.Cancelled() {

@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+	//nolint:exhaustruct // Modules are initialized with config values during ParseConfig
 	ms := []module.Module{
 		&lights.Lights{},
 		&virtual.Virtual{},

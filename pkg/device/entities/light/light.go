@@ -10,8 +10,16 @@ import (
 	"github.com/kjbreil/goscript/pkg/module"
 	"github.com/kjbreil/goscript/pkg/trigger"
 	hassentity "github.com/kjbreil/hass-mqtt/entities"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
+const (
+	maxBrightnessValue = 255
+	percentageDivisor  = 100
+)
+
+// Light represents a light device entity with HASS and HomeKit integration.
 type Light struct {
 	name             string
 	hass             *hassentity.Light
@@ -19,10 +27,12 @@ type Light struct {
 	homekitAccessory *accessory.ColoredLightbulb
 }
 
+// New creates a new Light entity with the given name and options.
 func New(name string, options ...func(*Light)) *Light {
 	snakeName := strcase.ToSnake(name)
-	readableName := strings.Title(strings.ReplaceAll(snakeName, "_", " "))
+	readableName := cases.Title(language.English).String(strings.ReplaceAll(snakeName, "_", " "))
 
+	//nolint:exhaustruct // hass, hassOptions, homekitAccessory initialized below
 	l := &Light{
 		name: readableName,
 	}
@@ -43,6 +53,7 @@ func New(name string, options ...func(*Light)) *Light {
 	return l
 }
 
+// GetHassEntity returns the HASS entity for this light.
 func (l *Light) GetHassEntity() hassentity.Entity {
 	if l.hass != nil {
 		return l.hass
@@ -50,14 +61,17 @@ func (l *Light) GetHassEntity() hassentity.Entity {
 	return nil
 }
 
+// GetDomainEntity returns the domain entity string for this light.
 func (l *Light) GetDomainEntity() string {
 	return l.hass.GetDomainEntity()
 }
 
+// UpdateState updates the state of the light entity.
 func (l *Light) UpdateState() {
 	l.hass.UpdateState()
 }
 
+// GetHomekitAccessory returns the HomeKit accessory for this light.
 func (l *Light) GetHomekitAccessory() *accessory.A {
 	if l.homekitAccessory != nil {
 		return l.homekitAccessory.A
@@ -65,13 +79,15 @@ func (l *Light) GetHomekitAccessory() *accessory.A {
 	return nil
 }
 
+// WithHomeKit returns an option function that adds HomeKit support to a light.
 func WithHomeKit() func(*Light) {
 	return func(l *Light) {
+		//nolint:exhaustruct // Only Name required; other Info fields optional
 		l.homekitAccessory = accessory.NewColoredLightbulb(accessory.Info{
 			Name: l.name,
 		})
 
-		l.hassOptions.CommandFunc(func(message mqtt.Message, client mqtt.Client) {
+		l.hassOptions.CommandFunc(func(message mqtt.Message, _ mqtt.Client) {
 			if string(message.Payload()) == "ON" {
 				l.homekitAccessory.Lightbulb.On.SetValue(true)
 			} else {
@@ -79,13 +95,13 @@ func WithHomeKit() func(*Light) {
 			}
 		})
 
-		l.hassOptions.EnableBrightness().BrightnessCommandFunc(func(message mqtt.Message, client mqtt.Client) {
+		l.hassOptions.EnableBrightness().BrightnessCommandFunc(func(message mqtt.Message, _ mqtt.Client) {
 			brightness, err := strconv.ParseFloat(string(message.Payload()), 64)
 			if err != nil {
 				return
 			}
 
-			brightnessPct := int((brightness / 255) * 100)
+			brightnessPct := int((brightness / maxBrightnessValue) * percentageDivisor)
 
 			err = l.homekitAccessory.Lightbulb.Brightness.SetValue(brightnessPct)
 			if err != nil {
@@ -103,6 +119,7 @@ func WithHomeKit() func(*Light) {
 	}
 }
 
+// WithCommandFunc returns an option function that sets a command callback for the light.
 func WithCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light) {
 	return func(l *Light) {
 		if l.homekitAccessory != nil {
@@ -121,6 +138,7 @@ func WithCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light) {
 	}
 }
 
+// WithBrightnessCommandFunc returns an option function that sets a brightness command callback.
 func WithBrightnessCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light) {
 	return func(l *Light) {
 		if l.homekitAccessory != nil {
@@ -131,7 +149,7 @@ func WithBrightnessCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light
 					return
 				}
 
-				brightnessPct := int((brightness / 255) * 100)
+				brightnessPct := int((brightness / maxBrightnessValue) * percentageDivisor)
 
 				err = l.homekitAccessory.Lightbulb.Brightness.SetValue(brightnessPct)
 				if err != nil {
@@ -142,7 +160,7 @@ func WithBrightnessCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light
 		}
 
 		l.homekitAccessory.Lightbulb.Brightness.OnValueRemoteUpdate(func(v int) {
-			brightness := float64(v) / 100 * 255
+			brightness := float64(v) / percentageDivisor * maxBrightnessValue
 			l.hass.Brightness(strconv.Itoa(int(brightness)))
 		})
 
@@ -150,31 +168,36 @@ func WithBrightnessCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light
 	}
 }
 
+// WithRgbCommandFunc returns an option function that sets an RGB command callback.
 func WithRgbCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light) {
 	return func(l *Light) {
 		l.hassOptions.EnableRgb().RgbCommandFunc(module.TaskMQTT(m, tr))
 	}
 }
 
+// WithRgbwCommandFunc returns an option function that sets an RGBW command callback.
 func WithRgbwCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light) {
 	return func(l *Light) {
 		l.hassOptions.EnableRgbw().RgbwwCommandFunc(module.TaskMQTT(m, tr))
 	}
 }
 
+// WithColorTempCommandFunc returns an option function that sets a color temperature command callback.
 func WithColorTempCommandFunc(m module.Module, tr *trigger.Trigger) func(*Light) {
 	return func(l *Light) {
 		l.hassOptions.EnableColorTemp().ColorTempCommandFunc(module.TaskMQTT(m, tr))
 	}
 }
 
+// WithStateFunc returns an option function that sets a state callback.
 func WithStateFunc(fn func() string) func(*Light) {
 	return func(l *Light) {
 		l.hassOptions.StateFunc(fn)
 	}
 }
 
-func WithJsonAttributes(fn func() string) func(*Light) {
+// WithJSONAttributes returns an option function that sets a JSON attributes callback.
+func WithJSONAttributes(fn func() string) func(*Light) {
 	return func(l *Light) {
 		l.hassOptions.JsonAttributesFunc(fn)
 	}

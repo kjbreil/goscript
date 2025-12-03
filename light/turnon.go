@@ -17,28 +17,38 @@ func (l *Light) TurnOn(t *trigger.Task, entities []string) {
 	l.repeatService("on", l.TurnOn, t, entities, lightService)
 }
 
+// Brightness sets the brightness parameter for the light.
 func (l *Light) Brightness(brightness float64) *Light {
 	l.turnOnParams.BrightnessPct = &brightness
 	return l
 }
+
+// BrightnessPct sets the brightness percentage parameter for the light.
 func (l *Light) BrightnessPct(brightnessPct float64) *Light {
 	l.turnOnParams.BrightnessPct = &brightnessPct
 	return l
 }
+
+// BrightnessStep sets the brightness step parameter for the light.
 func (l *Light) BrightnessStep(brightnessStep float64) *Light {
 	l.turnOnParams.BrightnessStepPct = &brightnessStep
 	return l
 }
+
+// BrightnessStepPct sets the brightness step percentage parameter for the light.
 func (l *Light) BrightnessStepPct(brightnessStepPct float64) *Light {
 	l.turnOnParams.BrightnessStepPct = &brightnessStepPct
 	return l
 }
 
+// Effect sets the light effect parameter.
 func (l *Light) Effect(effect string) *Light {
 	l.turnOnParams.Effect = &effect
 	return l
 }
+
+// Kelvin sets the color temperature in Kelvin for the light.
 func (l *Light) Kelvin(kelvin float64) *Light {
-	l.turnOnParams.Kelvin = &kelvin
+	l.turnOnParams.ColorTempKelvin = &kelvin
 	return l
 }

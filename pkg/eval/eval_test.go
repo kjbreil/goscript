@@ -19,6 +19,7 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "on",
 			args: args{
+				//nolint:exhaustruct // LastChanged and LastUpdated not needed for test
 				states: state.NewSingleStates("sensor.test", &state.State{
 					DomainEntity: "sensor.test",
 					Domain:       "humidity",
@@ -33,6 +34,7 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "float",
 			args: args{
+				//nolint:exhaustruct // LastChanged and LastUpdated not needed for test
 				states: state.NewSingleStates("sensor.test", &state.State{
 					DomainEntity: "sensor.test",
 					Domain:       "sensor",
@@ -47,6 +49,7 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "int",
 			args: args{
+				//nolint:exhaustruct // LastChanged and LastUpdated not needed for test
 				states: state.NewSingleStates("sensor.test", &state.State{
 					DomainEntity: "sensor.test",
 					Domain:       "sensor",
@@ -61,6 +64,7 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "int is 1 want 0",
 			args: args{
+				//nolint:exhaustruct // LastChanged and LastUpdated not needed for test
 				states: state.NewSingleStates("sensor.test", &state.State{
 					DomainEntity: "sensor.test",
 					Domain:       "sensor",

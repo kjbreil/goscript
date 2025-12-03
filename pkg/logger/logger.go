@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	timeFormat = "[15:04:05.000]"
+	timeFormat    = "[15:04:05.000]"
+	minJSONLength = 2 // Minimum length for non-empty JSON object "{}"
 
 	reset = "\033[0m"
 
@@ -54,10 +55,12 @@ func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	//nolint:exhaustruct // out field inherited from parent handler
 	return &Handler{h: h.h.WithAttrs(attrs), b: h.b, r: h.r, m: h.m}
 }
 
 func (h *Handler) WithGroup(name string) slog.Handler {
+	//nolint:exhaustruct // out field inherited from parent handler
 	return &Handler{h: h.h.WithGroup(name), b: h.b, r: h.r, m: h.m}
 }
 
@@ -89,6 +92,7 @@ func (h *Handler) computeAttrs(ctx context.Context, r slog.Record) (map[string]a
 
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	var level string
+
 	levelAttr := slog.Attr{
 		Key:   slog.LevelKey,
 		Value: slog.AnyValue(r.Level),
@@ -97,6 +101,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		levelAttr = h.r([]string{}, levelAttr)
 	}
 
+	//nolint:exhaustruct // Empty Attr for comparison
 	if !levelAttr.Equal(slog.Attr{}) {
 		level = levelAttr.Value.String() + ":"
 
@@ -116,6 +121,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	var timestamp string
+
 	timeAttr := slog.Attr{
 		Key:   slog.TimeKey,
 		Value: slog.StringValue(r.Time.Format(timeFormat)),
@@ -123,11 +129,13 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	if h.r != nil {
 		timeAttr = h.r([]string{}, timeAttr)
 	}
+	//nolint:exhaustruct // Empty Attr for comparison
 	if !timeAttr.Equal(slog.Attr{}) {
 		timestamp = colorize(lightGray, timeAttr.Value.String())
 	}
 
 	var msg string
+
 	msgAttr := slog.Attr{
 		Key:   slog.MessageKey,
 		Value: slog.StringValue(r.Message),
@@ -135,6 +143,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	if h.r != nil {
 		msgAttr = h.r([]string{}, msgAttr)
 	}
+	//nolint:exhaustruct // Empty Attr for comparison
 	if !msgAttr.Equal(slog.Attr{}) {
 		msg = colorize(white, msgAttr.Value.String())
 	}
@@ -146,7 +155,9 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 
 	var caller string
 	if c, ok := attrs["caller"]; ok {
-		caller = colorize(yellow, c.(string))
+		if cStr, ok := c.(string); ok {
+			caller = colorize(yellow, cStr)
+		}
 		delete(attrs, "caller")
 	}
 
@@ -173,12 +184,14 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		out.WriteString(caller)
 		out.WriteString(" ")
 	}
-	if len(bytes) > 2 {
+	if len(bytes) > minJSONLength {
 		out.WriteString(colorize(darkGray, string(bytes)))
 	}
 	out.WriteString("\n")
 
-	h.out.Write([]byte(out.String()))
+	if _, err = h.out.Write([]byte(out.String())); err != nil {
+		return fmt.Errorf("error writing to output: %w", err)
+	}
 
 	return nil
 }
@@ -190,6 +203,7 @@ func suppressDefaults(
 		if a.Key == slog.TimeKey ||
 			a.Key == slog.LevelKey ||
 			a.Key == slog.MessageKey {
+			//nolint:exhaustruct // Intentionally returning empty Attr to suppress default fields
 			return slog.Attr{}
 		}
 		if next == nil {
@@ -201,11 +215,14 @@ func suppressDefaults(
 
 func NewHandler(out io.Writer, opts *slog.HandlerOptions) *Handler {
 	if opts == nil {
+		//nolint:exhaustruct // Empty options uses slog defaults
 		opts = &slog.HandlerOptions{}
 	}
 	b := &bytes.Buffer{}
+
 	return &Handler{
 		b: b,
+
 		h: slog.NewJSONHandler(b, &slog.HandlerOptions{
 			Level:       opts.Level,
 			AddSource:   opts.AddSource,

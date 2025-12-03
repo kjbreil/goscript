@@ -24,10 +24,9 @@ func parseConfig(filename string) (map[string]string, error) {
 		switch vv := v.(type) {
 		case map[string]any:
 			if r, ok := vv["repo"]; ok {
-				switch r := r.(type) {
-				case string:
-					modules[k] = r
-				default:
+				if rStr, ok := r.(string); ok {
+					modules[k] = rStr
+				} else {
 					return nil, fmt.Errorf("repo for %s not string", k)
 				}
 			}

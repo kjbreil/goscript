@@ -10,9 +10,13 @@ import (
 	"github.com/kjbreil/hass-ws/services"
 )
 
+const (
+	serviceTickInterval = 100 * time.Millisecond
+)
+
 func Run(ctx context.Context, ws *hass_ws.Client, logger *slog.Logger, sChan Chan) {
 	chanBuffer := make(map[string]services.Service)
-	ticker := time.NewTicker(time.Millisecond * 100)
+	ticker := time.NewTicker(serviceTickInterval)
 	go func() {
 		defer ticker.Stop()
 		for {

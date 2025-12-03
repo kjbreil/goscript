@@ -11,6 +11,13 @@ import (
 	"github.com/adhocore/gronx"
 )
 
+const (
+	cronSegmentCount = 6
+	maxHourValue     = 25 // Value greater than 23 used for initialization
+	minutesPerHour   = 60
+)
+
+// TimeToCron converts a time.Time to a cron expression string.
 func TimeToCron(t time.Time) string {
 	minute := t.Minute()
 	hour := t.Hour()
@@ -19,11 +26,14 @@ func TimeToCron(t time.Time) string {
 	return cron
 }
 
+// CronToTime converts a cron expression to a time.Time based on the given time.
 func CronToTime(cron string, t time.Time) (time.Time, error) {
 	tickTime, err := gronx.NextTickAfter(cron, t, true)
 
 	return tickTime, err
 }
+
+// MustCronToTime converts a cron expression to a time.Time and panics on error.
 func MustCronToTime(cron string, t time.Time) time.Time {
 	tickTime, err := gronx.NextTickAfter(cron, t, true)
 	if err != nil {
@@ -32,13 +42,15 @@ func MustCronToTime(cron string, t time.Time) time.Time {
 
 	return tickTime
 }
+
+// CronToSegments parses a cron expression into an array of 6 integer segments.
 func CronToSegments(cron string) ([6]int, error) {
 	segments, err := gronx.Segments(cron)
 	var segs [6]int
 	if err != nil {
 		return segs, err
 	}
-	if len(segments) != 6 {
+	if len(segments) != cronSegmentCount {
 		return segs, errors.New("cron segments must be 6")
 	}
 
@@ -94,11 +106,13 @@ func LastValidCron(crons []string, t time.Time) (string, error) {
 
 	return lastExp, nil
 }
+
+// NextValidCron returns the next valid cron expression for the given crons and time.
 func NextValidCron(crons []string, t time.Time) (string, error) {
 	crons = SortCronJobs(crons)
 
 	lastExp := ""
-	lastHour := 25
+	lastHour := maxHourValue
 	lastMin := 61
 	for _, exp := range crons {
 		cronTime, err := CronToTime(exp, t)
@@ -126,7 +140,7 @@ func NextValidCron(crons []string, t time.Time) (string, error) {
 		}
 	}
 
-	if lastHour == 25 {
+	if lastHour == maxHourValue {
 		lastExp = crons[0]
 	}
 
@@ -138,6 +152,7 @@ type cronNextTick struct {
 	t    time.Time
 }
 
+// CleanExpressions removes empty cron expressions from the slice.
 func CleanExpressions(expressions []string) ([]string, bool) {
 	for i := range expressions {
 		if expressions[i] == "" {
@@ -148,6 +163,7 @@ func CleanExpressions(expressions []string) ([]string, bool) {
 	return expressions, true
 }
 
+// SortCronJobs sorts cron expressions by their next execution time.
 func SortCronJobs(expressions []string) []string {
 	expressions, _ = CleanExpressions(expressions)
 
@@ -175,6 +191,7 @@ func SortCronJobs(expressions []string) []string {
 	return expressions
 }
 
+// NextTime returns the next execution time for the given cron expressions.
 func NextTime(expressions []string, t time.Time) (time.Time, error) {
 	cron, err := NextValidCron(expressions, t)
 	if err != nil {
@@ -187,7 +204,7 @@ func NextTime(expressions []string, t time.Time) (time.Time, error) {
 	}
 	// correct for error in gronx
 	if t.Hour() != nextTick.Hour() {
-		nextTick = nextTick.Truncate(60 * time.Minute)
+		nextTick = nextTick.Truncate(minutesPerHour * time.Minute)
 	}
 
 	return nextTick, nil

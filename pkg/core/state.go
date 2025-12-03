@@ -11,6 +11,7 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 	statesFuncToRun := make(map[uuid.UUID]*trigger.Task)
 
 	for _, sr := range states {
+		//nolint:exhaustruct // LastChanged and LastUpdated not needed for initial state setup
 		s := &state.State{
 			DomainEntity: sr.DomainEntity(),
 			Domain:       sr.Domain(),
@@ -25,10 +26,11 @@ func (gs *GoScript) handleGetStates(states []model.Result) {
 	for _, sr := range states {
 		domainEntity := sr.DomainEntity()
 		entityState := sr.State()
+		//nolint:exhaustruct // Message fields set as needed for state change event
 		message := &model.Message{
 			Type: model.MessageTypeEvent,
-			Event: &model.Event{
-				Data: &model.Data{
+			Event: &model.Event{ //nolint:exhaustruct // Event fields set for state change
+				Data: &model.Data{ //nolint:exhaustruct // Data fields set for state change
 					EntityId: &domainEntity,
 					NewState: &model.State{
 						EntityId:    &domainEntity,
@@ -57,6 +59,7 @@ func (gs *GoScript) handleHassMessage(message model.Message) {
 		switch message.Event.EventType {
 		case model.EventTypeStateChanged:
 
+			//nolint:exhaustruct // LastChanged and LastUpdated not needed for state updates
 			s := &state.State{
 				DomainEntity: message.DomainEntity(),
 				Domain:       message.Domain(),
@@ -71,6 +74,15 @@ func (gs *GoScript) handleHassMessage(message model.Message) {
 		case model.EventTypeCallService:
 
 			gs.Runner.RunServiceTriggers(message)
+		case model.EventTypeAll:
+			// EventTypeAll is a subscription type, not an actual event
+			// No action needed for this case
+		case model.EventTypeState:
+			// EventTypeState is used for state subscriptions
+			// Actual state events use EventTypeStateChanged
+		case model.EventTypePysScriptRunning:
+			// PysScript running events - not currently handled
+			// Could be logged or monitored if needed in the future
 		}
 	}
 }

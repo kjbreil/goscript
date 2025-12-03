@@ -44,6 +44,7 @@ type Task struct {
 type TaskFunc func(t *Task)
 
 func New(tr *Trigger) *Task {
+	//nolint:exhaustruct // Task fields initialized as needed during setup
 	return &Task{
 		states:      tr.States,
 		f:           tr.Func,
@@ -143,6 +144,7 @@ func (t *Task) UUID() uuid.UUID {
 // WaitUntil waits until the eval equals true. Timeout of 0 means no timeout
 // panics if the context is cancelled.
 func (t *Task) WaitUntil(entityID string, eval []string, timeout time.Duration) bool {
+	//nolint:exhaustruct // Trigger fields set as needed for WaitUntil; others initialized by SetupTrigger
 	t.waitRequest <- &Trigger{
 		Triggers: []string{entityID},
 		Eval:     eval,

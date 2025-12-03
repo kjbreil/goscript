@@ -60,6 +60,7 @@ func TaskMQTT(m Module, tr *trigger.Trigger) func(message mqtt.Message, client m
 	tr = trigger.SetupTrigger(tr)
 
 	return func(message mqtt.Message, _ mqtt.Client) {
+		//nolint:exhaustruct // Only To, From, TaskTrigger, and MQTTMessage fields needed
 		m.Requests().Chan() <- control.Request{
 			To:          "goscript",
 			From:        m.Name(),

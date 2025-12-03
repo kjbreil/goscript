@@ -52,9 +52,9 @@ func TestSortCronJobs(t *testing.T) {
 		{
 			name: "empty",
 			args: args{
-				expressions: []string{"30 1 0 0 0", "0 12 0 0 0", "0 1 0 0 0", "25 1 0 0 0"},
+				expressions: []string{"30 1 * * *", "0 12 * * *", "0 1 * * *", "25 1 * * *"},
 			},
-			want: []string{"0 1 0 0 0", "25 1 0 0 0", "30 1 0 0 0", "0 12 0 0 0"},
+			want: []string{"0 1 * * *", "25 1 * * *", "30 1 * * *", "0 12 * * *"},
 		},
 
 		{

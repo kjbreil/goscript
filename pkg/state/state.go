@@ -237,6 +237,7 @@ func (ss *States) Where(state string) *States {
 }
 
 func MessageState(message *model.Message) *State {
+	//nolint:exhaustruct // LastChanged and LastUpdated not needed for message state conversion
 	return &State{
 		DomainEntity: message.DomainEntity(),
 		Domain:       message.Domain(),

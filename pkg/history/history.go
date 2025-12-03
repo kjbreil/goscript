@@ -1,3 +1,4 @@
+// Package history provides types and methods for managing entity state history.
 package history
 
 import (
@@ -6,8 +7,10 @@ import (
 	"github.com/kjbreil/goscript/pkg/state"
 )
 
+// Histories is a collection of History records.
 type Histories []*History
 
+// History represents the state history for a single entity over a time range.
 type History struct {
 	Entity       string
 	Domain       string
@@ -17,12 +20,14 @@ type History struct {
 	States       []*state.State
 }
 
+// GetHistories represents a request for entity histories over a time range.
 type GetHistories struct {
 	Start    time.Time
 	End      time.Time
 	Entities []string
 }
 
+// Get retrieves a History for the specified domain and entity.
 func (hs *Histories) Get(domain, entity string) *History {
 	for _, h := range *hs {
 		if h.Entity == entity && h.Domain == domain {
